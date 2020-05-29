@@ -1,6 +1,6 @@
 # aqui vou aprender a puxar a WN e usar seus recursos
 import nltk
-nltk.download('wordnet') # necessário uma vez só
+nltk.download() # necessário uma vez só
 from nltk.corpus import wordnet as wn
 
 
