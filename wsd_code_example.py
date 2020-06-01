@@ -6,7 +6,7 @@ import nltk
 import random
 from nltk.corpus import senseval
 from nltk.classify import accuracy, NaiveBayesClassifier, MaxentClassifier
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 # The following shows how the senseval corpus consists of instances, where each instance
 # consists of a target word (and its tag), it position in the sentence it appeared in
@@ -270,3 +270,17 @@ frequency_hard_sense_baseline = hard_sense_fd.freq(most_frequent_hard_sense)
 
 #>>> frequency_hard_sense_baseline
 #0.79736902838679902
+senseval.__dir__()
+senseval.instances()[0]
+len(senseval.raw())
+senseval.instances()[0].__dir__()
+senseval.instances()[0].senses
+senseval.instances()[0].context
+senseval.instances()[0].position
+senseval.instances()[0].word
+
+example_counts = Counter([w.word for w in senseval.instances()])
+example_counts
+# Counter({'hard-a': 4333, 'interest-n': 2368, 'line-n': 4146, 'serve-v': 4378})
+# daqui vemos a quantidade de cada exemplo no corpus
+# Agora o que quero fazer é ver como usar isso para as medidas da wordnet.
