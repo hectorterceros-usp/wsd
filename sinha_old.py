@@ -9,7 +9,8 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from label_correction import SV_SENSE_MAP
-
+from similarity import lesk
+from centrality import score_vertices
 
 pos_dict = {'N': wn.NOUN, 'V': wn.VERB, 'J': wn.ADJ, 'R': wn.ADV}
 
@@ -48,14 +49,6 @@ def get_sim_graph(synsets, dependency, max_dist = 3):
                         G
                         G.add_edge(t, s, weight = weight)
     return G
-
-def lesk(x, y):
-    return len(
-        set(x.definition().split()) &
-        set(y.definition().split()))
-
-def score_vertices(G, centrality):
-    return centrality(G)
 
 def assign_label(clean_instance, synsets, vertices):
     assigned = {}
@@ -109,3 +102,16 @@ target_word = instance.word[:-2]
 # para checar quais são as palavras possíveis, e então montar o filtro de POS
 distinct_words = FreqDist([i.word for i in senseval.instances()])
 score_instance = check_prediction(result, target_word, instance.senses[0])
+
+
+# após montar a escoragem geral, encontrei o seguinte problema:
+[clean_context(i.context)for i in senseval.instances()[:1000]]
+for j in range(1000):
+    i = senseval.instances()[j]
+    try:
+        clean_context(i.context)
+    except:
+        print('instance: {}'.format(j))
+
+clean_context(senseval.instances()[21].context)
+senseval.instances()[21].context
