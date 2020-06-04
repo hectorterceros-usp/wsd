@@ -11,12 +11,15 @@ import networkx as nx
 
 pos_dict = {'N': wn.NOUN, 'V': wn.VERB, 'J': wn.ADJ, 'R': wn.ADV}
 
-def clean_context(instance_text):
+def clean_context(instance):
+    instance_text = instance.context
+    instance_pos = instance.word[-1]
     new_context = []
     # checking for 'FRASL', ex. senseval.instances()[21].context
     instance_text = [w for w in instance_text if isinstance(w, tuple)]
     for (w, l) in instance_text:
-        if np.isin(l[0], ['N', 'V', 'J', 'R']):
+        # if np.isin(l[0], ['N', 'V', 'J', 'R']):
+        if l[0] == str.upper(instance_pos):
             new_label = pos_dict[l[0]]
             new_context.append((w, new_label))
             # print(len(new_context))
@@ -60,14 +63,15 @@ def assign_label(clean_instance, synsets, vertices):
         assigned[clean_instance[i][0]] = chosen
     return assigned
 
-def check_prediction(result, target_word, original_label):
+def check_prediction(result, target_word, original_label, verbose=False):
     try:
         pred = result[target_word]
         correct = [wn.synset(s) for s in SV_SENSE_MAP[original_label]]
         match = pred in correct
         return {'predicted': pred, 'correct': correct, 'match': match}
     except:
-        print('não foi encontrada a target_word: {}'.format(target_word))
+        if verbose:
+            print('não foi encontrada a target_word: {}'.format(target_word))
         return {'predicted': None, 'correct': None, 'match': 0}
 
 # trabalhando os dados da Senseval-2

@@ -2,16 +2,10 @@
 # Aqui estou tentando reproduzir o trabalho de Sinha (2007).
 # Esse é um trabalho seminal em WSD por grafos.
 # Quero construir o processo completo usando das ferramentas disponíveis.
-from nltk.corpus import senseval
-from nltk.corpus import wordnet as wn
-from nltk import FreqDist
-import numpy as np
 import pandas as pd
-import networkx as nx
-import matplotlib.pyplot as plt
-from label_correction import SV_SENSE_MAP
-from similarity import lesk
-from centrality import score_vertices
+from time import time
+from similarity import lesk, lch, wup, res, lin, jcn
+from centrality import score_vertices, degree, closeness, betweenness, pagerank
 from algorithm import *
 # clean_context, get_synsets, get_sim_graph, assign_label, check_prediction
 
@@ -22,8 +16,9 @@ senseval.instances()[0].context
 senseval.instances()[0].word
 senseval.instances()[0].senses
 
-def score_instance(instance, sim_metric=lesk, cent_metric=nx.degree_centrality):
-    clean_instance = clean_context(instance.context)
+
+def score_instance(instance, sim_metric=lesk, cent_metric=degree):
+    clean_instance = clean_context(instance)
     synsets = get_synsets(clean_instance)
     G = get_sim_graph(synsets, sim_metric)
     vertices = score_vertices(G, cent_metric)
@@ -35,9 +30,11 @@ def score_instance(instance, sim_metric=lesk, cent_metric=nx.degree_centrality):
 
 score_instance(instance)
 
-def score_method(n, sim_metric=lesk, cent_metric=nx.degree_centrality):
+def score_method(n, sim_metric=lesk, cent_metric=degree):
     scores = pd.DataFrame()
-    instances = senseval.instances()[:n]
+    todos = senseval.instances()
+    instances = [i for i in todos if i.word != 'hard-a']
+    instances = instances[:n]
     for i in range(len(instances)):
         # i = 10
         score = score_instance(instances[i], sim_metric, cent_metric)
@@ -48,5 +45,29 @@ def score_method(n, sim_metric=lesk, cent_metric=nx.degree_centrality):
                            'match': score['match']}, ignore_index=True)
     return scores
 
-scores = score_method(10, lesk, nx.degree_centrality)
-scores['match'].mean()
+def experiment_sim(cent_metric):
+    print('---------------------------------')
+    print('testando o método {}'.format(cent_metric.__name__))
+    sim_list = [lesk, lch, wup, res, lin, jcn]
+    best_acc = 0
+    best_method = None
+    for sim in sim_list:
+        start = time()
+        scores = score_method(100, sim, cent_metric)
+        end = time()
+        acc = scores['match'].mean()
+        print('método  : {}'.format(sim.__name__))
+        print('tempo   : {}'.format(end-start))
+        print('acurácia: {}'.format(acc))
+        print('---------------------------------')
+        if acc > best_acc:
+            best_acc = acc
+            best_method = sim
+    print('melhor acurácia: {} do método {}'.format(best_acc, best_method.__name__))
+    return best_method
+best_degree = experiment_sim(degree)
+best_betweenness = experiment_sim(betweenness)
+best_pagerank = experiment_sim(pagerank)
+# best_closeness = experiment_sim(closeness)
+# Esse ainda não está funcionando, vou seguir trablahando com ele
+# cent_metric= closeness
