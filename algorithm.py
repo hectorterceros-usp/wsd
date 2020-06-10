@@ -8,6 +8,8 @@ from nltk import FreqDist
 from label_correction import SV_SENSE_MAP
 import numpy as np
 import networkx as nx
+from similarity import lesk
+from centrality import score_vertices
 
 pos_dict = {'N': wn.NOUN, 'V': wn.VERB, 'J': wn.ADJ, 'R': wn.ADV}
 
@@ -37,7 +39,7 @@ def get_synsets(clean_instance, verbose=False):
         synsets.append(new_synsets)
     return synsets
 
-def get_sim_graph(synsets, dependency, max_dist = 3):
+def get_sim_graph(synsets, dependency=lesk, max_dist = 3):
     G = nx.Graph()
     l = len(synsets)
     for i in range(l):
@@ -50,6 +52,10 @@ def get_sim_graph(synsets, dependency, max_dist = 3):
                     if weight > 0:
                         G
                         G.add_edge(t, s, weight = weight)
+                    if s not in G:
+                        G.add_node(s)
+                if t not in G:
+                    G.add_node(t)
     return G
 
 def assign_label(clean_instance, synsets, vertices):
@@ -76,8 +82,8 @@ def check_prediction(result, target_word, original_label, verbose=False):
 
 # trabalhando os dados da Senseval-2
 def __test__():
-    instance = senseval.instances()[0]
-    clean_instance = clean_context(instance.context)
+    instance = senseval.instances()[10451]
+    clean_instance = clean_context(instance)
     synsets = get_synsets(clean_instance)
     G = get_sim_graph(synsets, lesk)
     vertices = score_vertices(G, nx.degree_centrality)
