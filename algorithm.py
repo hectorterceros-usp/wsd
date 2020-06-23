@@ -8,7 +8,7 @@ from nltk import FreqDist
 from label_correction import SV_SENSE_MAP
 import numpy as np
 import networkx as nx
-from similarity import lesk
+from similarity import lesk, res, lin
 from centrality import score_vertices
 
 pos_dict = {'N': wn.NOUN, 'V': wn.VERB, 'J': wn.ADJ, 'R': wn.ADV}
@@ -82,10 +82,10 @@ def check_prediction(result, target_word, original_label, verbose=False):
 
 # trabalhando os dados da Senseval-2
 def __test__():
-    instance = senseval.instances()[10451]
+    instance.context = senseval.instances()[10451]
     clean_instance = clean_context(instance)
     synsets = get_synsets(clean_instance)
-    G = get_sim_graph(synsets, lesk)
+    G = get_sim_graph(synsets, lin)
     vertices = score_vertices(G, nx.degree_centrality)
     result = assign_label(clean_instance, synsets, vertices)
     target_word = instance.word[:-2]

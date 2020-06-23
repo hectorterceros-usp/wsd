@@ -6,6 +6,7 @@ from nltk.corpus import stopwords
 brown_ic = wordnet_ic.ic('ic-brown.dat')
 # semcor_ic = wordnet_ic.ic('ic-semcor.dat')
 
+stopwords.words
 # x = wn.synsets('cat', wn.NOUN)[0]
 # y = wn.synsets('dog', wn.NOUN)[0]
 
