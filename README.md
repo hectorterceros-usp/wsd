@@ -10,3 +10,7 @@ O motivo histórico para isso é que o SENSEVAL foi realizado há muito tempo, u
 No caso, essa é a versão 1.7 para a WordNet. Para o SENSEVAL-3 até se utilizou outro repositório de verbos.
 Assim, para permitir a reprodução dos resultados de Sinha, estou também trabalhando com a versão 1.7.
 Para verificar o trabalho desenvolvido nesse sentido, basta checar o branch _wn17_.
+
+# TSPACO
+
+Estou nesse branch seguindo o trabalho realizado em [Nguyen, 2012], para realizar a WSD usando de ACO (_Ant Colony Optimization_) para resolver um TSP (_Traveling Salesperson Problem_) relacionado à centralidade no grafo de sentidos possíveis das palavras de uma frase.

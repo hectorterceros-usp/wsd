@@ -3,7 +3,7 @@
 import networkx as nx
 import numpy as np
 
-global_q0 = 0.9
+q0 = 0.9
 global_theta = 1
 global_beta = 2
 global_tau = 1
@@ -14,9 +14,31 @@ def _example_graph():
     G = nx.read_gpickle('data/tspaco_graph.pkl')
     print(len(G))
     return G
+list(G.nodes)
+
+for n in G.nodes():
+    # print(n)
+    G.nodes[n]['p'] = 1
+G['wrinkle.n.01']['p']
+G.nodes()['wrinkle.n.01']['p']
+G.nodes['wrinkle.n.01']['p']
+l = list(G.neighbors('wrinkle.n.01'))
+vertex = 'wrinkle.n.01'
+neighbor = 'source.n.07'
+G.edges[vertex, neighbor]['weight']
+
+words = []
+for v in G.nodes:
+    w = G.nodes()[v]['word']
+    if w not in words:
+        words.append(w)
+words
+
+for v in G.nodes(data='word'):
+    print(v[1])
 
 class Ant():
-    def __init__(self, vertex, G, n_words = None, q0 = global_q0):
+    def __init__(self, vertex, G, n_words = None):
         # self.v = vertex # vou usar o path e olhar para o final
         self.G = G
         self.path = [vertex]
@@ -113,6 +135,12 @@ def aco(G, iter=10, n_words = None, theta = 1, lam = 0.5, tau = 1):
         # pode valer a pena quando eu rodar para todos os grafos
         # terei que pensar em como isso seria. comparando paths?
     return dict([(v, p) for (v, p) in G.nodes(data='p')])
+
+r = aco(G, iter=100, lam=0.5)
+G.graph['best_path']
+G.graph['best_length']
+words
+
 
 def score_vertices(G, centrality):
     return centrality(G)

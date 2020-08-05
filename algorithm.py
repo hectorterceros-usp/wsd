@@ -8,8 +8,9 @@ from nltk import FreqDist
 from label_correction import SV_SENSE_MAP
 import numpy as np
 import networkx as nx
-from similarity import lesk, res, lin
-from centrality import score_vertices
+from similarity import lesk, ext_lesk
+# from centrality import score_vertices
+import pickle
 
 pos_dict = {'N': wn.NOUN, 'V': wn.VERB, 'J': wn.ADJ, 'R': wn.ADV}
 
@@ -28,7 +29,7 @@ def clean_context(instance):
     return new_context
 
 def get_synsets(clean_instance, verbose=False):
-    synsets = []
+    synsets = {}
     p = 0 # position
     for (w, l) in clean_instance:
         new_synsets = wn.synsets(w, pos=l)
@@ -36,26 +37,59 @@ def get_synsets(clean_instance, verbose=False):
             print('não encontrou synsets para "{}"'.format(w))
         # new_synsets = [{'w': w, 's': s for s in new_synsets]
         # new_synsets = {'word': w, 'synsets': new_synsets}
-        synsets.append(new_synsets)
+        synsets[w] = new_synsets
     return synsets
 
-def get_sim_graph(synsets, dependency=lesk, max_dist = 3):
+def ext_synset(s, hyper_hypo=True, mero_holo=True, domain=True):
+    l = []
+    if hyper_hypo:
+        # pega os hyper e hypo
+        l = l + s.hypernyms()
+        l = l + s.hyponyms()
+        l = l + s.instance_hypernyms()
+        l = l + s.instance_hyponyms()
+        l = l + s.verb_groups()
+    if mero_holo:
+        # pega os mero e holo
+        l = l + s.part_meronyms()
+        l = l + s.part_holonyms()
+        l = l + s.member_meronyms()
+        l = l + s.member_holonyms()
+        l = l + s.substance_holonyms()
+        l = l + s.substance_meronyms()
+    if domain:
+        # pega os ligados por domínio
+        l = l + s.in_usage_domains()
+        l = l + s.in_topic_domains()
+        l = l + s.in_region_domains()
+        l = l + s.topic_domains()
+        l = l + s.region_domains()
+        l = l + s.usage_domains()
+    text = s.definition()
+    l = list(set(l))
+    for ss in l:
+        text += ' . '
+        text += ss.definition()
+    return text
+
+def get_sim_graph(synsets, dependency=lesk):
     G = nx.Graph()
     l = len(synsets)
-    for i in range(l):
-        for j in range(i, l):
-            if j - i > max_dist:
-                break
+    for i in synsets:
+        # print(i)
+        for t in synsets[i]:
+            # populando os vértices
+            G.add_node(t.name(), gloss = t.definition(),
+                       ext_gloss = ext_synset(t),
+                       word = i)
+    for i in synsets:
+        for j in synsets:
+            if j == i:
+                continue
             for t in synsets[i]:
                 for s in synsets[j]:
-                    weight = dependency(t, s)
-                    if weight > 0:
-                        G
-                        G.add_edge(t, s, weight = weight)
-                    if s not in G:
-                        G.add_node(s)
-                if t not in G:
-                    G.add_node(t)
+                    weight = dependency(t.name(), s.name(), G)
+                    G.add_edge(t.name(), s.name(), weight = weight)
     return G
 
 def assign_label(clean_instance, synsets, vertices):
@@ -82,10 +116,12 @@ def check_prediction(result, target_word, original_label, verbose=False):
 
 # trabalhando os dados da Senseval-2
 def __test__():
-    instance.context = senseval.instances()[10451]
+    instance = senseval.instances()[10451]
+    instance.context
     clean_instance = clean_context(instance)
     synsets = get_synsets(clean_instance)
-    G = get_sim_graph(synsets, lin)
+    G = get_sim_graph(synsets, ext_lesk)
+    nx.write_gpickle(G, 'data/tspaco_graph.pkl')
     vertices = score_vertices(G, nx.degree_centrality)
     result = assign_label(clean_instance, synsets, vertices)
     target_word = instance.word[:-2]
