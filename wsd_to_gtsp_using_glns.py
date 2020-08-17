@@ -26,16 +26,34 @@ import re
 import os
 import gzip
 import subprocess
+from collections import defaultdict
 
 
 
-all_data_loc = './WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
+all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
 tree = ET.parse(all_data_loc)
 root = tree.getroot()
 root.attrib
-for child in root:
-    print(child.tag)
+# for child in root:
+#     print(child.tag)
 len(root)
+
+total_frases = 0
+for i in range(len(root)):
+    n_frases = len(root[i])
+    # print('doc {} tem {} frases'.format(i, n_frases))
+    total_frases += n_frases
+print('total de frases: {}'.format(total_frases))
+
+all_gold_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt'
+gold = {}
+with open(all_gold_loc, 'r') as f:
+    for line in f.readlines():
+        gold[line.split()[0]] = line.split()[1:]
+gold
+
+# Localização do GLNS em Julia
+algo_loc = '../wsd_papers/glns/GLNS.jl/GLNScmd.jl'
 
 # entendendo a estrutura do XML
 # <corpus lang="en">
@@ -43,25 +61,7 @@ len(root)
 #     <sentence id="senseval2.d000.s000">
 #       <wf lemma="the" pos="DET">The</wf>
 #       <instance id="senseval2.d000.s000.t000" lemma="art" pos="NOUN">art</instance>
-sent = root[0][0]
-len(sent)
-from collections import defaultdict
-word_types = defaultdict(int)
-for word in sent:
-    word_types[word.tag] += 1
-inst = sent.find('instance')
-inst.attrib
-inst.get('lemma')
 
-synsets = []
-for instance in sent.findall('instance'):
-    lemma = instance.get('lemma')
-    pos = instance.get('pos')
-    # print(lemma, pos)
-    synsets_word = wn.synsets(lemma, eval('wn.'+pos))
-    print(len(synsets_word))
-    synsets.append(synsets_word)
-synsets
 
 def ext_synset(s, hyper_hypo=True, mero_holo=True, domain=True):
     l = []
@@ -97,19 +97,19 @@ def ext_synset(s, hyper_hypo=True, mero_holo=True, domain=True):
     return FreqDist(text)
 
 def get_lesk(gloss_t, gloss_s):
-    # gloss_t = G.nodes()[t.name()]['ext_gloss']
-    # gloss_s = G.nodes()[s.name()]['ext_gloss']
+    # i, j = 0, 1
+    # gloss_t = ed[i]['ed']
+    # gloss_s = ed[j]['ed']
     intersection = set(gloss_t.keys()) & set(gloss_s.keys())
     value = 0
     for k in intersection:
-        k = '.'
+        # k = '.'
         value += gloss_t[k] * gloss_s[k]
-    return value
+    return value/(sum(gloss_t.values()) + sum(gloss_s.values()))
 
 
 def get_sim_graph(synsets):
-    n = sum([len(s) for s in synsets])
-    M = np.ones((n, n)) * 9999
+    # n = sum([len(s) for s in synsets])
     ed = []
     for i in range(len(synsets)):
         # print(i)
@@ -124,93 +124,104 @@ def get_sim_graph(synsets):
 
 def create_matrix(ed):
     n = len(ed)
+    M = np.ones((n, n)) * 9999
     for i in range(n):
         for j in range(i+1, n):
             if ed[i]['word'] == ed[j]['word']:
                 continue
             try:
                 weight = wn.jcn_similarity(ed[i]['synset'], ed[j]['synset'], brown_ic)
+                assert(weight > 0)
+                # print('jcn weight: {}'.format(weight))
             except:
+                print('começou lesk')
                 weight = get_lesk(ed[i]['ed'], ed[i]['ed'])
+                print('lsk weight: {}'.format(weight))
             if weight > 1e-5: # evitar coisas como 1e-300 da jcn
                 M[i][j] = 1/weight
                 M[j][i] = 1/weight
     return M
-ed = get_sim_graph(synsets)
-M = create_matrix(ed)
-np.mean(M)
-
-def gtsp_matrix(M):
-    text = ''
-    for line in M.astype(int).astype(str):
-        text += '\n' + ' '.join(line)
-    return text
-
-sent.attrib
-gtsp_loc = './gtsp_clean/' + sent.attrib['id'] + '.gtsp'
-with open(gtsp_loc, 'w') as f:
-    f.write('NAME: ' + sent.attrib['id'])
-    f.write('\nTYPE: GTSP')
-    f.write('\nCOMMENT: ')
-    f.write('\nDIMENSION: ' + str(len(M)))
-    f.write('\nGTSP_SETS: ' + str(len(synsets)))
-    f.write('\nEDGE_WEIGHT_TYPE: EXPLICIT')
-    f.write('\nEDGE_WEIGHT_FORMAT: FULL_MATRIX')
-    f.write('\nEDGE_WEIGHT_SECTION')
-    # aqui coloco a matrix dos pesos
-    f.write(gtsp_matrix(M))
-    #
-    f.write('\nGTSP_SET_SECTION:')
-    c = 0
-    for w in range(len(synsets)):
-        text = str(w+1) + ' '
-        for s in range(len(synsets[w])):
-            c += 1
-            text += str(c) + ' '
-        f.write('\n' + text + '-1')
-
-# daqui rodou o GLNS e pegou o resultado
-algo_loc = './GLNS.jl/GLNScmd.jl'
-# gtsp_loc = './gtsp_clean/senseval2.d000.s000.gtsp'
-process = subprocess.Popen([algo_loc, gtsp_loc],
-                           stdout = subprocess.PIPE,
-                           stderr = subprocess.PIPE)
-stdout, stderr = process.communicate()
-stdout, stderr
-tour = stdout.split(b'\n')[-3]
-tour_vec = eval(re.sub('.*\[', '[', tour.decode()))
-ed[tour_vec[0]]
-# Terei que arrumar a criação do GTSP para poder recuperar os Synsets do Tour
-
-ed[11]
-M[9]
-M[11]
-gtsp_matrix(M)
-
-chosen = []
-for i in tour_vec:
-    chosen.append(ed[i-1])
-chosen
-
-for instance in sent.findall('instance'):
-    print(instance.attrib)
 
 
-all_gold_loc = './WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt'
-gold = {}
-with open(all_gold_loc, 'r') as f:
-    i = 0
-    for line in f.readlines():
-        gold[line.split()[0]] = line.split()[1:]
-        i += 1
-        if i > 10:
-            break
-gold
+resp = {}
+doc = root[0]
+for sent in doc:
+    # sent = root[0][0]
+    sent_id = sent.attrib['id']
 
-correct = 0
-for w in chosen:
-    w = chosen[0]
-    id = 'senseval2.d000.s000.t{:03d}'.format(w['word']-1)
-    if w['synset'].lemmas()[0].key() in gold[id]:
-        correct += 1
-print('{} corretos de {}'.format(correct, len(chosen)))
+    synsets = []
+    for instance in sent.findall('instance'):
+        lemma = instance.get('lemma')
+        pos = instance.get('pos')
+        # print(lemma, pos)
+        synsets_word = wn.synsets(lemma, eval('wn.'+pos))
+        print(len(synsets_word))
+        synsets.append(synsets_word)
+    synsets
+    if len(synsets) == 0:
+        continue
+
+    ed = get_sim_graph(synsets)
+    M = create_matrix(ed)
+    np.mean(M)
+
+    def gtsp_matrix(M):
+        text = ''
+        for line in M.astype(int).astype(str):
+            text += '\n' + ' '.join(line)
+        return text
+
+    sent.attrib
+    gtsp_loc = './data/gtsp_clean/' + sent.attrib['id'] + '.gtsp'
+    with open(gtsp_loc, 'w') as f:
+        f.write('NAME: ' + sent.attrib['id'])
+        f.write('\nTYPE: GTSP')
+        f.write('\nCOMMENT: ')
+        f.write('\nDIMENSION: ' + str(len(M)))
+        f.write('\nGTSP_SETS: ' + str(len(synsets)))
+        f.write('\nEDGE_WEIGHT_TYPE: EXPLICIT')
+        f.write('\nEDGE_WEIGHT_FORMAT: FULL_MATRIX')
+        f.write('\nEDGE_WEIGHT_SECTION')
+        # aqui coloco a matrix dos pesos
+        f.write(gtsp_matrix(M))
+        #
+        f.write('\nGTSP_SET_SECTION:')
+        c = 0
+        for w in range(len(synsets)):
+            text = str(w+1) + ' '
+            for s in range(len(synsets[w])):
+                c += 1
+                text += str(c) + ' '
+            f.write('\n' + text + '-1')
+
+    # daqui rodou o GLNS e pegou o resultado
+    # gtsp_loc = './gtsp_clean/senseval2.d000.s000.gtsp'
+    process = subprocess.Popen([algo_loc, gtsp_loc],
+                               stdout = subprocess.PIPE,
+                               stderr = subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    stdout, stderr
+    try:
+        tour = stdout.split(b'\n')[-3]
+    except:
+        continue
+    tour_vec = eval(re.sub('.*\[', '[', tour.decode()))
+    # Terei que arrumar a criação do GTSP para poder recuperar os Synsets do Tour
+
+    chosen = []
+    for i in tour_vec:
+        chosen.append(ed[i-1])
+    chosen
+
+    correct = 0
+    for w in chosen:
+        # w = chosen[0]
+        id = '{}.t{:03d}'.format(sent_id, w['word']-1)
+        if w['synset'].lemmas()[0].key() in gold[id]:
+            correct += 1
+    print('{} corretos de {}'.format(correct, len(chosen)))
+    resp[sent.attrib['id']] = (correct, len(chosen))
+
+corretos = sum([c for (c, t) in resp.values()])
+total = sum([t for (c, t) in resp.values()])
+print('Total: {} corretos de {}'.format(corretos, total))
