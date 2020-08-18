@@ -24,6 +24,7 @@ from time import time
 # Taking from the step2 models
 from step2_heuristic import degree_centrality, mfs
 from step2_tspaco import aco
+from step2_glns import glns
 
 all_gold_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt'
 gold = {}
@@ -33,12 +34,9 @@ with open(all_gold_loc, 'r') as f:
 gold
 
 
-
-# sent_id = 'senseval2.d000.s032'
-model = degree_centrality
-model = mfs
-model = aco
+# Functions
 def score_sentence(sent_id, model):
+    # sent_id = 'senseval2.d000.s032'
     gpickle_file = './data/gpickle/' + sent_id + '.gpickle'
     G = nx.read_gpickle(gpickle_file)
     pred = model(G)
@@ -65,6 +63,8 @@ def score_solution(model, n=-1):
         # file = sent_list[0]
         sent_id = file[:-8]
         tp, fp = score_sentence(sent_id, model)
+        if tp + fp == 0:
+            continue
         acc = tp / (tp + fp)
         sent_result[sent_id] = {'tp': tp, 'fp': fp, 'acc': acc}
     sum_tp = sum([sent['tp'] for sent in sent_result.values()])
@@ -75,7 +75,17 @@ def score_solution(model, n=-1):
     return (sum_tp, sum_fp, avg_acc, sum_acc)
 
 
-start = time()
-score_solution(model, -1)
-end = time()
-print('demorou {} segundos total'.format(int(end-start)))
+# Comparing models
+def run_models(n=-1):
+    results = {}
+    for model in [degree_centrality, mfs, aco, glns]:
+        start = time()
+        r = score_solution(model, n)
+        results[model.__name__] = r
+        end = time()
+        print('demorou {} segundos total'.format(int(end-start)))
+    return results
+
+
+# Comparing all models
+run_models(20)
