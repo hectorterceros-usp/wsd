@@ -24,19 +24,24 @@ def matrix_from_graph(G):
     l = list(G)
     n = len(l)
     M = np.ones((n, n)) * 9999
+    try:
+        max_w = max([w for (u, v, w) in G.edges.data('weight')])
+    except:
+        print('não há edges na frase {}'.format(list(G)[0][:-5]))
+        return M
     for (u, v, w) in G.edges.data('weight'):
         l_u, l_v = l.index(u), l.index(v)
         if w < 1e-5:
             w = 1e-5
-        M[l_u][l_v] = 1/w
-        M[l_v][l_u] = 1/w
+        M[l_u][l_v] = max_w/w
+        M[l_v][l_u] = max_w/w
     # print(np.mean(M))
     return M
 
 def write_matrix(G, sent_id='example'):
     # sent_id = 'senseval2.d000.s032'
     filename = './data/gtsplib/' + sent_id + '.gtsp'
-    if len(G) < 1:
+    if len(G) <= 1:
         return ''
     synsets = {}
     for (v, w) in G.nodes(data='id'):

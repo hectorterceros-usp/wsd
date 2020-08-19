@@ -36,9 +36,10 @@ gold
 
 # Functions
 def score_sentence(sent_id, model):
-    # sent_id = 'senseval2.d000.s032'
+    # sent_id = 'senseval2.d001.s003'
     gpickle_file = './data/gpickle/' + sent_id + '.gpickle'
     G = nx.read_gpickle(gpickle_file)
+    # list(G)
     pred = model(G)
     tp, fp = 0, 0
     for p in pred:

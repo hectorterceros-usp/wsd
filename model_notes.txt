@@ -1,0 +1,143 @@
+# LESK norma 0
+55 50 0.5533028083028083 0.5238095238095238
+demorou 3 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+58 47 0.6150717338217339 0.5523809523809524
+demorou 1 segundos total
+houve algum problema com a instância
+houve algum problema com a instância
+houve algum problema com a instância
+45 57 0.35360913596207716 0.4411764705882353
+demorou 184 segundos total
+{'aco': (58, 47, 0.6150717338217339, 0.5523809523809524),
+ 'degree_centrality': (55, 50, 0.5533028083028083, 0.5238095238095238),
+ 'glns': (45, 57, 0.35360913596207716, 0.4411764705882353),
+ 'mfs': (72, 33, 0.7271123321123321, 0.68
+
+ # LESK norma 0 corrigida
+ 55 50 0.5533028083028083 0.5238095238095238
+demorou 0 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+60 45 0.6650351037851039 0.5714285714285714
+demorou 1 segundos total
+49 56 0.45747557997557997 0.4666666666666667
+demorou 1 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+50 55 0.5363110500610501 0.47619047619047616
+demorou 0 segundos total
+houve algum problema com a instância
+houve algum problema com a instância
+houve algum problema com a instância
+42 60 0.3920347626229979 0.4117647058823529
+demorou 159 segundos total
+{'aco': (50, 55, 0.5363110500610501, 0.47619047619047616),
+ 'degree_centrality': (49, 56, 0.45747557997557997, 0.4666666666666667),
+ 'glns': (42, 60, 0.3920347626229979, 0.4117647058823529),
+ 'mfs': (72, 33, 0.7271123321123321, 0.6857142857142857)}
+
+ # LESK norma 1
+ 56 49 0.506043956043956 0.5333333333333333
+demorou 2 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+58 47 0.6099755799755799 0.5523809523809524
+demorou 1 segundos total
+houve algum problema com a instância
+houve algum problema com a instância
+houve algum problema com a instância
+40 62 0.34414278531925596 0.39215686274509803
+demorou 227 segundos total
+{'aco': (58, 47, 0.6099755799755799, 0.5523809523809524),
+ 'degree_centrality': (56, 49, 0.506043956043956, 0.5333333333333333),
+ 'glns': (40, 62, 0.34414278531925596, 0.39215686274509803),
+ 'mfs': (72, 33, 0.7271123321123321, 0.6
+
+# LESK com GLNS corrigida por max_w
+57 48 0.5560439560439561 0.5428571428571428
+demorou 2 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+56 49 0.5861660561660562 0.5333333333333333
+demorou 1 segundos total
+não há edges na frase senseval2.d001.s003.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d008.s000.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d007.s008.t000
+houve algum problema com a instância
+52 50 0.5053131509013862 0.5098039215686274
+demorou 190 segundos total
+{'aco': (56, 49, 0.5861660561660562, 0.5333333333333333),
+ 'degree_centrality': (57, 48, 0.5560439560439561, 0.5428571428571428),
+ 'glns': (52, 50, 0.5053131509013862, 0.5098039215686274),
+ 'mfs': (72, 33, 0.7271123321123321, 0.6857142857142857)}
+ # Esse não deveria ter mudado para qqr valor q não fosse GLNS. Estranho
+ # Mas é interessante que GLNS encostou com o resto
+
+ # Outra run da configuração acima
+ 56 49 0.506043956043956 0.5333333333333333
+demorou 3 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+60 45 0.6222939560439561 0.5714285714285714
+demorou 0 segundos total
+não há edges na frase senseval2.d001.s003.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d008.s000.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d007.s008.t000
+houve algum problema com a instância
+52 50 0.49665302018243196 0.5098039215686274
+demorou 191 segundos total
+{'aco': (60, 45, 0.6222939560439561, 0.5714285714285714),
+ 'degree_centrality': (56, 49, 0.506043956043956, 0.5333333333333333),
+ 'glns': (52, 50, 0.49665302018243196, 0.5098039215686274),
+ 'mfs': (72, 33, 0.7271123321123321, 0.6857142857142857)}
+ # uma coisa "interessante" é que há divergências nos modelos entre as runs
+ # mesmo quando esses não são alterados, como TSPACO e Degree nesse último caso
+ # para TSPACO isso pode ser justificado pela sua natureza estocástica.
+ # Mas não imagino o que cause isso para Degree. Terei que averiguar.
+ # Importante notar que não há controle de random.seed() aqui. Pode resolver.
+
+# Aplicando JCN onde possível
+56 49 0.5143772893772894 0.5333333333333333
+demorou 2 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+54 51 0.5749755799755799 0.5142857142857142
+demorou 1 segundos total
+não há edges na frase senseval2.d001.s003.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d008.s000.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d007.s008.t000
+houve algum problema com a instância
+48 54 0.42475759534583063 0.47058823529411764
+demorou 199 segundos total
+{'aco': (54, 51, 0.5749755799755799, 0.5142857142857142),
+ 'degree_centrality': (56, 49, 0.5143772893772894, 0.5333333333333333),
+ 'glns': (48, 54, 0.42475759534583063, 0.47058823529411764),
+ 'mfs': (72, 33, 0.7271123321123321, 0.685714285714285
+
+# melhorando a mistura de JCN com LESK, usando LESK com norma 1
+56 49 0.506043956043956 0.5333333333333333
+demorou 2 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+58 47 0.5917811355311355 0.5523809523809524
+demorou 1 segundos total
+não há edges na frase senseval2.d001.s003.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d008.s000.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d007.s008.t000
+houve algum problema com a instância
+56 46 0.538483085541909 0.5490196078431373
+demorou 267 segundos total
+{'aco': (58, 47, 0.5917811355311355, 0.5523809523809524),
+ 'degree_centrality': (56, 49, 0.506043956043956, 0.5333333333333333),
+ 'glns': (56, 46, 0.538483085541909, 0.5490196078431373),
+ 'mfs': (72, 33, 0.7271123321123321, 0.6857142857142857)}

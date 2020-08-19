@@ -135,6 +135,7 @@ def aco(H, iter=10, n_words = None, theta = 1, lam = 0.5, tau = 1):
         # mas acho que não precisa por ora
         # pode valer a pena quando eu rodar para todos os grafos
         # terei que pensar em como isso seria. comparando paths?
+    # When out from this loop, optimization has stopped
     values = dict([(v, p) for (v, p) in G.nodes(data='p')])
     best = {}
     for (v, w) in G.nodes(data='id'):
