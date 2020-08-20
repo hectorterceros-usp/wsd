@@ -141,3 +141,23 @@ demorou 267 segundos total
  'degree_centrality': (56, 49, 0.506043956043956, 0.5333333333333333),
  'glns': (56, 46, 0.538483085541909, 0.5490196078431373),
  'mfs': (72, 33, 0.7271123321123321, 0.6857142857142857)}
+
+# Aplicando essa mistura com LOG_LESK
+56 49 0.462293956043956 0.5333333333333333
+demorou 3 segundos total
+72 33 0.7271123321123321 0.6857142857142857
+demorou 0 segundos total
+57 48 0.6162454212454211 0.5428571428571428
+demorou 1 segundos total
+não há edges na frase senseval2.d001.s003.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d008.s000.t000
+houve algum problema com a instância
+não há edges na frase semeval2013.d007.s008.t000
+houve algum problema com a instância
+45 57 0.3819776628600158 0.4411764705882353
+demorou 222 segundos total
+{'aco': (57, 48, 0.6162454212454211, 0.5428571428571428),
+ 'degree_centrality': (56, 49, 0.462293956043956, 0.5333333333333333),
+ 'glns': (45, 57, 0.3819776628600158, 0.4411764705882353),
+ 'mfs': (72, 33, 0.7271123321123321, 0.6857142857142857)}

@@ -9,7 +9,7 @@ def _example_graph():
     print(len(G))
     return G
 
-def degree_centrality(G):
+def degree(G):
     best = {}
     vertices = defaultdict(int)
     for (u, v, w) in G.edges(data='weight'):

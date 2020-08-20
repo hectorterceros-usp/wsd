@@ -1,4 +1,5 @@
-*.csv
-data/*
+**.csv
 **.gz
 SourceCode+ExecutableFile/*
+**.pickle
+**.gpickle
