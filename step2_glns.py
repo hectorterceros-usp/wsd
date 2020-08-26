@@ -12,7 +12,8 @@ import subprocess
 algo_loc = '../wsd_papers/glns/GLNS.jl/GLNScmd.jl'
 
 def _example_graph():
-    sent_id = 'senseval2.d000.s032'
+    # file = 'semeval2013.d009.s008.gpickle'
+    sent_id = 'semeval2013.d009.s008'
     G = nx.read_gpickle('data/gpickle/' + sent_id + '.gpickle')
     # print(len(G))
     return G
@@ -81,12 +82,12 @@ def write_matrix(G, sent_id='example'):
 
 # daqui rodou o GLNS e pegou o resultado
 def run_glns_on_matrix(gtsp_loc, G):
-    # gtsp_loc = './data/gtsplib/senseval2.d000.s032.gtsp'
+    # gtsp_loc = './data/gtsplib/example.gtsp'
     process = subprocess.Popen([algo_loc, gtsp_loc],
                                stdout = subprocess.PIPE,
                                stderr = subprocess.PIPE)
     stdout, stderr = process.communicate()
-    stdout, stderr
+    # stdout, stderr
     try:
         tour = stdout.split(b'\n')[-3]
     except:

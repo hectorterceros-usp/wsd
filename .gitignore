@@ -3,3 +3,4 @@
 SourceCode+ExecutableFile/*
 **.pickle
 **.gpickle
+**.gtsp

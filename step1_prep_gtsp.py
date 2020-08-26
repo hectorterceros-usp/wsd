@@ -21,7 +21,7 @@ from math import log
 import os
 # import gzip
 # from collections import defaultdict
-jcn_correction=100
+jcn_correction=1
 
 ## Functions
 
@@ -87,7 +87,7 @@ def lesk_ratio(t, s, G=nx.Graph()):
     total = sum(t_def.values()) + sum(s_def.values())
     return value/total
 
-def jcn(t, s, G=nx.Graph(), backup=lesk):
+def jcn(t, s, G=nx.Graph(), backup=lesk_ratio):
     t_synset = wn.synset(G.nodes(data='synset')[t])
     s_synset = wn.synset(G.nodes(data='synset')[s])
     if (t_synset.pos() == s_synset.pos()) & (t_synset.pos() in ['n', 'v']):
@@ -99,6 +99,20 @@ def jcn(t, s, G=nx.Graph(), backup=lesk):
         print('JCN: {:.3f}; LSK: {}'.format(sim * jcn_correction, sim_lesk))
         return sim * jcn_correction + sim_lesk
     return backup(t, s, G)
+
+def al_saiagh(t, s, G=nx.Graph(), backup=lesk):
+    t_synset = wn.synset(G.nodes(data='synset')[t])
+    s_synset = wn.synset(G.nodes(data='synset')[s])
+    if (t_synset.pos() == s_synset.pos()) & (t_synset.pos() in ['n', 'v']):
+        sim = t_synset.jcn_similarity(s_synset, brown_ic)
+        if sim > 1e5: # evitando estourar para os casos sim == 1e300
+            sim = 1e5
+        sim2 = -1/sim
+        # sim_lesk = log(lesk(t, s, G)+1)
+        sim_lesk = log(backup(t, s, G)+1)
+        print('JCN: {:.3f}; LSK: {}'.format(sim * jcn_correction, sim_lesk))
+        return sim2 + sim_lesk
+    return log(backup(t, s, G)+1)
 
 def graph_from_synsets(synsets, id, dependency=jcn):
     # Aqui vou criar tanto o grafo G quanto sua interpretação ed
@@ -119,8 +133,8 @@ def graph_from_synsets(synsets, id, dependency=jcn):
             G.add_edge(u, v, weight=weight)
     return G
 
-def write_graph(G, id='example'):
-    filename = './data/gpickle/' + id + '.gpickle'
+def write_graph(G, id='example', folder='./data/jcn+lesk_ratio_small/'):
+    filename = folder + id + '.gpickle'
     if len(G) > 1:
         nx.write_gpickle(G, filename)
     return filename
@@ -134,7 +148,7 @@ def graph_from_sentence(sent, export_graph=True):
         synsets_word = wn.synsets(lemma, eval('wn.'+pos))
         synsets[instance.get('id')] = synsets_word
 
-    G = graph_from_synsets(synsets, id)
+    G = graph_from_synsets(synsets, id, dependency = jcn)
     if export_graph:
         write_graph(G, id)
     return G

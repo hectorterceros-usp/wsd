@@ -109,17 +109,7 @@ for special_folder in ['jcn+lesk_ratio',
                        'jcn+lesk_log', 'al_saiagh']:
     print('###' + special_folder)
     gpickle_folder = './data/' + special_folder + '/'
-    results, sol_df = run_models(models=[degree, mfs, aco, glns])
-
-
-results, sol_df = run_models(models=[degree, mfs, aco, glns])
-for special_folder in ['jcn+lesk_ratio', 'jcn+lesk', 'lesk', 'lesk_ratio',
-                       'jcn+lesk_log', 'lesk_log', 'al_saiagh']:
-    print('###' + special_folder)
-    gpickle_folder = './data/' + special_folder + '/'
-    results, sol_df = run_models()
-
-sol_df.columns
+    results, sol_df = run_models(models=[degree, mfs, aco])
 sol_df['gold'] = pd.Series(gold)
 
 def compare_columns(d, c1, c2):
@@ -130,38 +120,9 @@ def compare_columns(d, c1, c2):
 sol_df['mfs_gold'] = sol_df.apply(compare_columns, axis=1, args=('mfs', 'gold'))
 sol_df['aco_gold'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'gold'))
 sol_df['deg_gold'] = sol_df.apply(compare_columns, axis=1, args=('degree', 'gold'))
-# sol_df['glns_gold'] = sol_df.apply(compare_columns, axis=1, args=('glns', 'gold'))
 sol_df['aco_mfs'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'mfs'))
 sol_df['deg_mfs'] = sol_df.apply(compare_columns, axis=1, args=('deg', 'mfs'))
-# sol_df['glns_mfs'] = sol_df.apply(compare_columns, axis=1, args=('glns', 'mfs'))
-# sol_df['aco_glns'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'glns'))
 
 with open('./data/resultados.pickle', 'wb') as f:
     pickle.dump(sol_df, f)
 print('concluído!')
-
-### DEscobrindo pq o GLNS travou com um exemplo do al-saiagh
-
-gpickle_folder = './data/al_saiagh/'
-model = glns
-sent_list = os.listdir(gpickle_folder)
-sent_result = {}
-sent_list = sent_list[:n]
-solutions = {}
-for file in sent_list:
-    # file = 'semeval2013.d009.s008.gpickle'
-    # file = sent_list[0]
-    print(file)
-    sent_id = file[:-8]
-    tp, fp, solution = score_sentence(sent_id, model)
-    if tp + fp == 0:
-        continue
-    acc = tp / (tp + fp)
-    sent_result[sent_id] = {'tp': tp, 'fp': fp, 'acc': acc}
-    solutions[sent_id] = solution
-sum_tp = sum([sent['tp'] for sent in sent_result.values()])
-sum_fp = sum([sent['fp'] for sent in sent_result.values()])
-avg_acc = np.mean([sent['acc'] for sent in sent_result.values()])
-# sum_acc = sum_tp / (sum_tp + sum_fp)
-print(sum_tp, sum_fp, avg_acc)
-return (sum_tp, sum_fp, avg_acc), solutions
