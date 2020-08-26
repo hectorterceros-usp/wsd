@@ -23,6 +23,9 @@ import os
 # from collections import defaultdict
 jcn_correction=1
 
+all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
+folder='./data/jcn+lesk_ratio_small/'
+
 ## Functions
 
 def extend_gloss(s, hyper_hypo=True, mero_holo=True, domain=True):
@@ -139,7 +142,7 @@ def write_graph(G, id='example', folder='./data/jcn+lesk_ratio_small/'):
         nx.write_gpickle(G, filename)
     return filename
 
-def graph_from_sentence(sent, export_graph=True):
+def graph_from_sentence(sent, export_graph=True, folder='./data/jcn+lesk_ratio_small/'):
     id = sent.get('id')
     synsets = {}
     for instance in sent.findall('instance'):
@@ -150,35 +153,27 @@ def graph_from_sentence(sent, export_graph=True):
 
     G = graph_from_synsets(synsets, id, dependency = jcn)
     if export_graph:
-        write_graph(G, id)
+        write_graph(G, id, folder)
     return G
 
 
 
 ## Datasets
 
-all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
+
+# Preparing all data and folders
 tree = ET.parse(all_data_loc)
 root = tree.getroot()
-
-
-# Preparing all data
-#
-# resp = {}
-# doc = root[0]
-# root.attrib
-# sent = root[0][0]
-# sent_id = sent.attrib['id']
-#
-# graph_from_sentence(sent)
-#
-
+try:
+    os.listdir(folder)
+except:
+    os.mkdir(folder)
 
 start = time.time()
 for doc in root:
     for sent in doc:
         # print(sent.get('id'))
         print('processing ' + sent.get('id'))
-        graph_from_sentence(sent)
+        graph_from_sentence(sent, folder=folder)
 end = time.time()
 print('demorou {} segundos total'.format(int(end-start)))

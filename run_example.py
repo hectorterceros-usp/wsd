@@ -28,7 +28,8 @@ from step2_tspaco import aco
 from step2_glns import glns
 
 
-gpickle_folder = './data/jcn+lesk_ratio/'
+
+gpickle_folder = './data/jcn+lesk_ratio_small/'
 
 all_gold_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt'
 gold = {}
@@ -105,11 +106,10 @@ def run_models(n=-1, models=[degree, mfs, aco]):
 
 # Comparing all models
 # results, sol_df = run_models(models=[degree, mfs, aco, glns])
-for special_folder in ['jcn+lesk_ratio',
-                       'jcn+lesk_log', 'al_saiagh']:
+for special_folder in ['jcn+lesk_ratio_small']:
     print('###' + special_folder)
     gpickle_folder = './data/' + special_folder + '/'
-    results, sol_df = run_models(models=[degree, mfs, aco])
+    results, sol_df = run_models(models=[mfs, degree, aco])
 sol_df['gold'] = pd.Series(gold)
 
 def compare_columns(d, c1, c2):
