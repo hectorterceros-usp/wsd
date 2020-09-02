@@ -9,7 +9,7 @@ def _example_graph():
     print(len(G))
     return G
 
-def degree(G):
+def degree(G, params={}):
     best = {}
     vertices = defaultdict(int)
     for (u, v, w) in G.edges(data='weight'):
@@ -24,7 +24,7 @@ def degree(G):
             best[w] = (v, d)
     return [v for (v, d) in best.values()]
 
-def mfs(G):
+def mfs(G, params={}):
     best = {}
     for (v, w) in G.nodes(data='id'):
         if v[-3:] == '000':

@@ -3,6 +3,7 @@
 import networkx as nx
 import numpy as np
 from step2_heuristic import mfs
+import random
 
 q0 = 0.9
 global_theta = 1
@@ -12,10 +13,10 @@ global_lambda = 0.1
 epsilon = 0.1
 
 def _example_graph():
-    sent_id = 'senseval2.d000.s032'
-    G = nx.read_gpickle('data/gpickle/' + sent_id + '.gpickle')
-    # print(len(G))
-    return G
+    sent_id = 'senseval3.d002.s115'
+    H = nx.read_gpickle('data/gpickle/' + sent_id + '.gpickle')
+    # print(len(H))
+    return H
 # G = _example_graph()
 # list(G.nodes)
 #
@@ -105,41 +106,92 @@ class Ant():
                 # global_update, preciso confirmar
         return better
 
-def aco(H, iter=10, n_words = None, theta = 1, lam = 0.5, tau = 1):
+def aco(H, iter=3, theta = 1, lam = 0.5, tau = 1):
     # Primeiro vou testar se há mais de duas instâncias a desambiguar
-    if len(set([w for (v, w) in H.nodes(data='id')])) < 2:
-        return mfs(H)
     G = H.copy()
+    if len(G.edges()) < 1:
+        for v in G.nodes():
+            G.nodes()[v]['p'] = theta
+        return G
+    # Preciso corrigir n_words, mas é algo do grafo, não entra como param
+    n_words = len(set([w for (v, w) in G.nodes(data='id')]))
     G.graph['best_length'] = 0
     G.graph['best_path'] = []
     ants = []
     for v in G.nodes():
         # vamos localizar uma formiga em cada vértice
-        ants.append(Ant(v, G, n_words))
         G.nodes()[v]['p'] = theta
+        ants.append(Ant(v, G, n_words))
     for i in range(iter):
         # print(ants[0].path)
+        for j in range(n_words):
+            for ant in ants:
+                ant.move()
+            for v in G.nodes():
+                # lam para lambda, que é palavra reservada em python
+                # Aqui temos a evaporação do feromônio
+                G.nodes()[v]['p'] = (1 - lam) * G.nodes()[v]['p']
+            for ant in ants:
+                # Aqui temos a deposição de feromônio pelas formigas
+                G.nodes()[ant.current()]['p'] += lam * tau
         for ant in ants:
-            ant.move()
+            # Ao final da iteração, temos a avaliação de cada rota criada
             ant.is_route_completed()
-        for v in G.nodes():
-            # lam para lambda, que é palavra reservada em python
-            G.nodes()[v]['p'] = (1 - lam) * G.nodes()[v]['p']
-        for ant in ants:
-            G.nodes()[ant.current()]['p'] += lam * tau
-            # isso está um pouco feio. Vejo que é para depositar após a
-            # evaporação, mas talvez tenha um jeito melhor de fazer
-            # pensando bem, não entendi
         # ainda não implementei a outra forma parar a otimização
         # que é quando todas as formigas seguem o mesmo caminho
         # mas acho que não precisa por ora
         # pode valer a pena quando eu rodar para todos os grafos
         # terei que pensar em como isso seria. comparando paths?
     # When out from this loop, optimization has stopped
+    return G
+
+def single_aco(H, params={}):
+    # correção de default por params
+    if len(H.edges()) < 1:
+        return []
+    default = {'iter':5, 'theta': 1, 'lam': 0.5, 'tau': 1}
+    for key in default:
+        if key in params:
+            default[key] = params[key]
+    # Rodando a otimização
+    G = aco(H, default['iter'], default['theta'], default['lam'], default['tau'])
+    # Extraindo os melhores valores
     values = dict([(v, p) for (v, p) in G.nodes(data='p')])
     best = {}
     for (v, w) in G.nodes(data='id'):
         d = values[v]
+        if w not in best:
+            best[w] = (v, d)
+        elif best[w][1] < d:
+            best[w] = (v, d)
+    return [v for (v, d) in best.values()]
+
+def stochastic_aco(H, params={}):
+    if len(H.edges()) < 1:
+        return []
+    best_result = 0
+    chosen = H
+    n_words = len(set([w for (v, w) in H.nodes(data='id')]))
+    default = {'iter':3, 'theta': 1, 'lam': 0.5, 'tau': 1, 'runs':10, 'random_seed':7}
+    for key in default:
+        if key in params:
+            default[key] = params[key]
+    # random seed
+    random.seed(default['random_seed'])
+    for run in range(default['runs']):
+        G = aco(H, default['iter'], default['theta'], default['lam'], default['tau'])
+        if G.graph['best_length'] > best_result:
+            chosen = G
+    values = dict([(v, p) for (v, p) in chosen.nodes(data='p')])
+    best = {}
+    # print('stochastic length: ' + str(len(chosen)))
+    # print('values: ' + str(len(values)))
+    for (v, w) in chosen.nodes(data='id'):
+        d = values[v]
+        if d is None:
+            print("houve um problema para o grafo " + str(w))
+            continue
+        # print(d, w, v)
         if w not in best:
             best[w] = (v, d)
         elif best[w][1] < d:
@@ -155,26 +207,3 @@ def aco(H, iter=10, n_words = None, theta = 1, lam = 0.5, tau = 1):
 #
 # def score_vertices(G, centrality):
 #     return centrality(G)
-#
-# def degree(G):
-#     # nx.degree_centrality(G) não serve, pois não usa pesos
-#     for v in G.nodes:
-#         G.nodes[v]['weight'] = 0
-#     for u, v, w in G.edges.data('weight'):
-#         G.nodes[u]['weight'] += w
-#         G.nodes[v]['weight'] += w
-#     output = {}
-#     for v in G.nodes:
-#         output[v] = G.nodes[v]['weight']
-#     return output
-#
-# def closeness(G):
-#     print('closeness abandonado, respondendo degree')
-#     return degree(G)
-#
-# def betweenness(G):
-#     print('betweenness abandonado, respondendo degree')
-#     return degree(G)
-#
-# def pagerank(G):
-#     return nx.pagerank(G)
