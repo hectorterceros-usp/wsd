@@ -137,13 +137,16 @@ def save_results(sol_df, gpickle_folder):
     return None
 
 
-# results, sol_df = run_models(models=[degree, mfs, aco, glns])
-for special_folder in ['jcn+lesk_ratio', 'jcn+lesk_ratio_small',
-                       'jcn+lesk_log', 'lesk', 'al_saiagh']:
-    print('###' + special_folder)
-    gpickle_folder = './data/' + special_folder + '/'
-    results, sol_df = run_models(gpickle_folder, n=50)
-    save_results(sol_df, gpickle_folder)
+def all_models():
+    # results, sol_df = run_models(models=[degree, mfs, aco, glns])
+    for special_folder in ['jcn+lesk_ratio', 'jcn+lesk_ratio_small',
+                           'jcn+lesk_log', 'lesk', 'al_saiagh']:
+        print('###' + special_folder)
+        gpickle_folder = './data/' + special_folder + '/'
+        results, sol_df = run_models(gpickle_folder, n=50)
+        save_results(sol_df, gpickle_folder)
+    return None
+
 #
 #
 # ### Trabalhando os melhores resultados

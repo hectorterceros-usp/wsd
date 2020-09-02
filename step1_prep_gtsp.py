@@ -139,7 +139,7 @@ def write_graph(G, id='example', folder='./data/jcn+lesk_ratio_small/'):
         nx.write_gpickle(G, filename)
     return filename
 
-def graph_from_sentence(sent, export_graph=True):
+def graph_from_sentence(sent, export_graph=True, folder='./data/jcn+lesk_ratio_small/'):
     id = sent.get('id')
     synsets = {}
     for instance in sent.findall('instance'):
@@ -150,7 +150,7 @@ def graph_from_sentence(sent, export_graph=True):
 
     G = graph_from_synsets(synsets, id, dependency = jcn)
     if export_graph:
-        write_graph(G, id)
+        write_graph(G, id, folder)
     return G
 
 
@@ -173,12 +173,12 @@ root = tree.getroot()
 # graph_from_sentence(sent)
 #
 
-
-start = time.time()
-for doc in root:
-    for sent in doc:
-        # print(sent.get('id'))
-        print('processing ' + sent.get('id'))
-        graph_from_sentence(sent)
-end = time.time()
-print('demorou {} segundos total'.format(int(end-start)))
+def run_for_all():
+    start = time.time()
+    for doc in root:
+        for sent in doc:
+            # print(sent.get('id'))
+            print('processing ' + sent.get('id'))
+            graph_from_sentence(sent)
+    end = time.time()
+    print('demorou {} segundos total'.format(int(end-start)))

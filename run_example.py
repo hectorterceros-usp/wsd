@@ -24,12 +24,41 @@ from time import time
 
 # Taking from the step2 models
 from step2_heuristic import degree, mfs
-from step2_tspaco import aco
+from step2_tspaco import single_aco
 from step2_glns import glns
 
 
+from step1_prep_gtsp import graph_from_sentence
 
-gpickle_folder = './data/jcn+lesk_ratio_small/'
+from step3_scoring import score_sentence, score_solution, run_models
+
+# O que quero fazer é preparar um exemplo pequeno que rode facilmente.
+
+# Preparando os grafos
+all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
+tree = ET.parse(all_data_loc)
+root = tree.getroot()
+
+gpickle_folder='./data/example/'
+
+def run_50(gpickle_folder='./data/example/'):
+    try:
+        os.listdir(gpickle_folder)
+    except:
+        os.mkdir(gpickle_folder)
+    start = time.time()
+    i = 0
+    for doc in root:
+        for sent in doc:
+            # print(sent.get('id'))
+            print('processing ' + sent.get('id'))
+            graph_from_sentence(sent, gpickle_folder)
+            i += 1
+            if i > 50:
+                end = time.time()
+                print('demorou {} segundos total'.format(int(end-start)))
+                return None
+
 
 all_gold_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt'
 gold = {}
@@ -39,77 +68,13 @@ with open(all_gold_loc, 'r') as f:
 gold
 
 
+
 # Functions
-def score_sentence(sent_id, model):
-    # sent_id = 'senseval2.d001.s001'
-    # model = aco
-    gpickle_file = gpickle_folder + sent_id + '.gpickle'
-    G = nx.read_gpickle(gpickle_file)
-    # list(G)
-    pred = model(G)
-    tp, fp = 0, 0
-    solution = {}
-    for p in pred:
-        # p = pred[0]
-        inst_id = p[:-5]
-        keys = []
-        for l in wn.synset(G.nodes()[p]['synset']).lemmas():
-            keys.append(l.key())
-        if len(set(gold[inst_id]) & set(keys)) > 0:
-            tp += 1
-        else:
-            fp += 1
-        solution[inst_id] = keys
-    del(G)
-    return tp, fp, solution
-# score_sentence(sent_id, model)
-
-def score_solution(model, n=-1):
-    sent_list = os.listdir(gpickle_folder)
-    sent_result = {}
-    sent_list = sent_list[:n]
-    solutions = {}
-    for file in sent_list:
-        # file = sent_list[0]
-        sent_id = file[:-8]
-        tp, fp, solution = score_sentence(sent_id, model)
-        if tp + fp == 0:
-            continue
-        acc = tp / (tp + fp)
-        sent_result[sent_id] = {'tp': tp, 'fp': fp, 'acc': acc}
-        solutions[sent_id] = solution
-    sum_tp = sum([sent['tp'] for sent in sent_result.values()])
-    sum_fp = sum([sent['fp'] for sent in sent_result.values()])
-    avg_acc = np.mean([sent['acc'] for sent in sent_result.values()])
-    # sum_acc = sum_tp / (sum_tp + sum_fp)
-    print(sum_tp, sum_fp, avg_acc)
-    return (sum_tp, sum_fp, avg_acc), solutions
-
-
-# Comparing models
-def run_models(n=-1, models=[degree, mfs, aco]):
-    results = {}
-    solutions_df = pd.DataFrame()
-    for model in models:
-        start = time()
-        print('model: {}'.format(model.__name__))
-        r, solutions = score_solution(model, n)
-        results[model.__name__] = r
-        end = time()
-        temp = pd.Series()
-        for s in solutions:
-            temp = temp.append(pd.Series(solutions[s]))
-        solutions_df[model.__name__] = temp
-    print('demorou {} segundos total'.format(int(end-start)))
-    return results, solutions_df
-
-
 # Comparing all models
 # results, sol_df = run_models(models=[degree, mfs, aco, glns])
-for special_folder in ['jcn+lesk_ratio_small']:
-    print('###' + special_folder)
-    gpickle_folder = './data/' + special_folder + '/'
-    results, sol_df = run_models(models=[mfs, degree, aco])
+print('###' + gpickle_folder)
+# gpickle_folder = './data/' + special_folder + '/'
+results, sol_df = run_models(gpickle_folder, models=['mfs', 'degree', 'single_aco'])
 sol_df['gold'] = pd.Series(gold)
 
 def compare_columns(d, c1, c2):
