@@ -139,7 +139,7 @@ def write_graph(G, id='example', folder='./data/jcn+lesk_ratio_small/'):
         nx.write_gpickle(G, filename)
     return filename
 
-def graph_from_sentence(sent, export_graph=True, folder='./data/jcn+lesk_ratio_small/'):
+def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio_small/'):
     id = sent.get('id')
     synsets = {}
     for instance in sent.findall('instance'):
@@ -149,8 +149,7 @@ def graph_from_sentence(sent, export_graph=True, folder='./data/jcn+lesk_ratio_s
         synsets[instance.get('id')] = synsets_word
 
     G = graph_from_synsets(synsets, id, dependency = jcn)
-    if export_graph:
-        write_graph(G, id, folder)
+    write_graph(G, id, folder)
     return G
 
 
