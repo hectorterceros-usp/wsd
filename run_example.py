@@ -46,7 +46,7 @@ def run_50(gpickle_folder='./data/example/'):
         os.listdir(gpickle_folder)
     except:
         os.mkdir(gpickle_folder)
-    start = time.time()
+    start = time()
     i = 0
     for doc in root:
         for sent in doc:
@@ -55,7 +55,7 @@ def run_50(gpickle_folder='./data/example/'):
             graph_from_sentence(sent, gpickle_folder)
             i += 1
             if i > 50:
-                end = time.time()
+                end = time()
                 print('demorou {} segundos total'.format(int(end-start)))
                 return None
 
@@ -74,6 +74,7 @@ gold
 # results, sol_df = run_models(models=[degree, mfs, aco, glns])
 print('###' + gpickle_folder)
 # gpickle_folder = './data/' + special_folder + '/'
+run_50(gpickle_folder)
 results, sol_df = run_models(gpickle_folder, models=['mfs', 'degree', 'single_aco'])
 sol_df['gold'] = pd.Series(gold)
 
