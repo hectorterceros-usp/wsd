@@ -27,7 +27,7 @@ from step2_heuristic import degree, mfs
 from step2_tspaco import single_aco, stochastic_aco, aco
 from step2_glns import glns
 
-gpickle_folder = './data/jcn+lesk_ratio/'
+gpickle_folder = './data/al_saiagh/'
 
 all_gold_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt'
 gold = {}
@@ -87,7 +87,7 @@ def score_solution(model, gpickle_folder, n=-1, params={}):
 
 
 # Comparing models
-def run_models(gpickle_folder, n=-1, models=['mfs', 'degree', 'aco5', 'aco25', 'aco100']):
+def run_models(gpickle_folder, n=-1, models=['mfs', 'degree', 'aco', 'glns']):
     results = {}
     solutions_df = pd.DataFrame()
     for model in models:
@@ -95,12 +95,8 @@ def run_models(gpickle_folder, n=-1, models=['mfs', 'degree', 'aco5', 'aco25', '
         print('model: {}'.format(model))
         # model = 'stochastic_aco100'
         # n = -1
-        if model == 'aco5':
-            r, solutions = score_solution(single_aco, gpickle_folder, n, params={'iter':5})
-        elif model == 'aco25':
-            r, solutions = score_solution(single_aco, gpickle_folder, n, params={'iter':25})
-        elif model == 'aco100':
-            r, solutions = score_solution(single_aco, gpickle_folder, n, params={'iter':100})
+        if model == 'aco':
+            r, solutions = score_solution(single_aco, gpickle_folder, n, params={'iter':10})
         else:
             r, solutions = score_solution(eval(model), gpickle_folder, n)
         results[model] = r
@@ -125,11 +121,11 @@ def save_results(sol_df, gpickle_folder):
     sol_df['mfs_gold'] = sol_df.apply(compare_columns, axis=1, args=('mfs', 'gold'))
     sol_df['aco_gold'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'gold'))
     sol_df['deg_gold'] = sol_df.apply(compare_columns, axis=1, args=('degree', 'gold'))
-    # sol_df['glns_gold'] = sol_df.apply(compare_columns, axis=1, args=('glns', 'gold'))
+    sol_df['glns_gold'] = sol_df.apply(compare_columns, axis=1, args=('glns', 'gold'))
     sol_df['aco_mfs'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'mfs'))
     sol_df['deg_mfs'] = sol_df.apply(compare_columns, axis=1, args=('deg', 'mfs'))
-    # sol_df['glns_mfs'] = sol_df.apply(compare_columns, axis=1, args=('glns', 'mfs'))
-    # sol_df['aco_glns'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'glns'))
+    sol_df['glns_mfs'] = sol_df.apply(compare_columns, axis=1, args=('glns', 'mfs'))
+    sol_df['aco_glns'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'glns'))
 
     with open(gpickle_folder+'/results.pickle', 'wb') as f:
         pickle.dump(sol_df, f)
@@ -137,16 +133,16 @@ def save_results(sol_df, gpickle_folder):
     return None
 
 
-def all_models():
+def all_models(n=50):
     # results, sol_df = run_models(models=[degree, mfs, aco, glns])
-    for special_folder in ['jcn+lesk_ratio', 'jcn+lesk_ratio_small',
-                           'jcn+lesk_log', 'lesk', 'al_saiagh']:
+    for special_folder in ['jcn+lesk_ratio',
+                           'jcn+lesk_log', 'al_saiagh']:
         print('###' + special_folder)
         gpickle_folder = './data/' + special_folder + '/'
-        results, sol_df = run_models(gpickle_folder, n=50)
+        results, sol_df = run_models(gpickle_folder, n=n)
         save_results(sol_df, gpickle_folder)
     return None
-
+all_models(n=-1)
 #
 #
 # ### Trabalhando os melhores resultados

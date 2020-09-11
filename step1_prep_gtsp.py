@@ -139,7 +139,7 @@ def write_graph(G, id='example', folder='./data/jcn+lesk_ratio_small/'):
         nx.write_gpickle(G, filename)
     return filename
 
-def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio_small/'):
+def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio/'):
     id = sent.get('id')
     synsets = {}
     for instance in sent.findall('instance'):
@@ -181,3 +181,5 @@ def run_for_all():
             graph_from_sentence(sent)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
+
+run_for_all()

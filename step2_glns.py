@@ -93,13 +93,16 @@ def run_glns_on_matrix(gtsp_loc, G):
     except:
         print('houve algum problema com a instância')
         return []
-    tour_vec = eval(re.sub('.*\[', '[', tour.decode()))
+    try:
+        tour_vec = eval(re.sub('.*\[', '[', tour.decode()))
+    except:
+        return []
     chosen = []
     for i in tour_vec:
         chosen.append(list(G)[i-1])
     chosen
     return chosen
 
-def glns(G):
+def glns(G, params={}):
     filename = write_matrix(G, 'example')
     return run_glns_on_matrix(filename, G)

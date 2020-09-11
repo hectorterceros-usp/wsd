@@ -16,6 +16,9 @@ import pickle
 import re
 import pandas as pd
 
+import nltk
+ntlk.download('stopwords')
+
 # para salvar os gtsp preparados
 import os
 import gzip
