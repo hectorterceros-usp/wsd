@@ -4,3 +4,4 @@ SourceCode+ExecutableFile/*
 **.pickle
 **.gpickle
 **.gtsp
+__pycache__

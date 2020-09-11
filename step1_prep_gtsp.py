@@ -87,6 +87,10 @@ def lesk_ratio(t, s, G=nx.Graph()):
     total = sum(t_def.values()) + sum(s_def.values())
     return value/total
 
+def lesk_log(t, s, G=nx.Graph()):
+    # LESK feita sobre o G para a aplicação mais simples. Estou testando para ver se funciona do jeito mais simples
+    return log(lesk(t, s, G)+1)
+
 def jcn(t, s, G=nx.Graph(), backup=lesk_ratio):
     t_synset = wn.synset(G.nodes(data='synset')[t])
     s_synset = wn.synset(G.nodes(data='synset')[s])
@@ -114,7 +118,7 @@ def al_saiagh(t, s, G=nx.Graph(), backup=lesk):
         return sim2 + sim_lesk
     return log(backup(t, s, G)+1)
 
-def graph_from_synsets(synsets, id, dependency=jcn):
+def graph_from_synsets(synsets, id, dependency=jcn, backup=lesk):
     # Aqui vou criar tanto o grafo G quanto sua interpretação ed
     # n = sum([len(s) for s in synsets])
     G = nx.Graph()
@@ -129,17 +133,17 @@ def graph_from_synsets(synsets, id, dependency=jcn):
         for v in list(G):
             if G.nodes()[u]['id'] == G.nodes()[v]['id']:
                 continue
-            weight = dependency(u, v, G)
+            weight = dependency(u, v, G, backup=backup)
             G.add_edge(u, v, weight=weight)
     return G
 
-def write_graph(G, id='example', folder='./data/jcn+lesk_ratio_small/'):
+def write_graph(G, id='example', folder='./data/jcn+lesk_ratio/'):
     filename = folder + id + '.gpickle'
     if len(G) > 1:
         nx.write_gpickle(G, filename)
     return filename
 
-def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio/'):
+def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio/', dep=(jcn, lesk)):
     id = sent.get('id')
     synsets = {}
     for instance in sent.findall('instance'):
@@ -148,7 +152,7 @@ def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio/'):
         synsets_word = wn.synsets(lemma, eval('wn.'+pos))
         synsets[instance.get('id')] = synsets_word
 
-    G = graph_from_synsets(synsets, id, dependency = jcn)
+    G = graph_from_synsets(synsets, id, dependency = dep[0], backup=dep[1])
     write_graph(G, id, folder)
     return G
 
@@ -172,14 +176,27 @@ root = tree.getroot()
 # graph_from_sentence(sent)
 #
 
-def run_for_all():
+def run_for_all(folder, dep):
     start = time.time()
     for doc in root:
         for sent in doc:
             # print(sent.get('id'))
             print('processing ' + sent.get('id'))
-            graph_from_sentence(sent)
+            graph_from_sentence(sent, folder, dep)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
 
-run_for_all()
+# run_for_all()
+
+# Para melhorar esse código,  vou criar os pares folder-function
+pares = {'jcn+lesk_ratio': (jcn, lesk_ratio),
+         'jcn+lesk_log': (jcn, lesk_log),
+         'al_saiagh': (al_saiagh, lesk)}
+
+for dep in pares:
+    folder = './data/' + dep
+    try:
+        os.listdir(folder)
+    except:
+        os.mkdir(folder)
+    run_for_all(folder, pares[dep])
