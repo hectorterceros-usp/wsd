@@ -194,7 +194,7 @@ pares = {'jcn+lesk_ratio': (jcn, lesk_ratio),
          'al_saiagh': (al_saiagh, lesk)}
 
 for dep in pares:
-    folder = './data/' + dep
+    folder = './data/' + dep + '/'
     try:
         os.listdir(folder)
     except:
