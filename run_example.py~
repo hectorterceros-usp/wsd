@@ -4,15 +4,7 @@
 # Essa funções servem para qualquer das soluções disponíveis.
 # Em seguida, de acordo com a solução escolhida, seguir para seu script.
 
-# Inicialmente, garantindo de baixar os corpora do nltk
-import nltk
-nltk.download('stopwords')
-nltk.download('stopwords')
-nltk.download('stopwords')
-
-# Seguindo com os outros pacotes
 import xml.etree.ElementTree as ET
-
 from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
 from nltk.corpus import stopwords
@@ -24,6 +16,8 @@ import pickle
 import re
 import pandas as pd
 
+import nltk
+nltk.download('stopwords')
 
 # para salvar os gtsp preparados
 import os
