@@ -134,7 +134,21 @@ def graph_from_synsets(synsets, id, dependency=jcn, backup=lesk):
             if G.nodes()[u]['id'] == G.nodes()[v]['id']:
                 continue
             weight = dependency(u, v, G, backup=backup)
-            G.add_edge(u, v, weight=weight)
+            G.add_edge(u, v, sim=weight)
+    # transformando as sims em dists
+    nx.draw(G)
+    if len(G.edges()) == 0:
+        # caso não haja arestas, vamos só ignorar
+        return G
+    sims = {}
+    for (u,v,s) in G.edges(data='sim'):
+        sims[u,v] = s
+    max_sim = max(sims.values())
+    min_sim = min(sims.values())
+    dists = {}
+    for k,v in sims.items():
+        dists[k] = (max_sim-min_sim)/(max_sim-v+1)
+    nx.set_edge_attributes(G, dists, 'dist')
     return G
 
 def write_graph(G, id='example', folder='./data/jcn+lesk_ratio/'):
@@ -163,7 +177,7 @@ def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio/', dep=(jcn, lesk)):
 all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
 tree = ET.parse(all_data_loc)
 root = tree.getroot()
-
+# sent = root[0][0]
 
 # Preparing all data
 #
@@ -194,6 +208,7 @@ pares = {'jcn+lesk_ratio': (jcn, lesk_ratio),
          'al_saiagh': (al_saiagh, lesk)}
 
 for dep in pares:
+    # dep = ('jcn+lesk_ratio', (jcn, lesk_ratio))
     folder = './data/' + dep + '/'
     try:
         os.listdir(folder)
