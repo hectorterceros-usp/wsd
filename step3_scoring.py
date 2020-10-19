@@ -26,6 +26,7 @@ from time import time
 from step2_heuristic import degree, mfs
 from step2_tspaco import single_aco, stochastic_aco, aco
 from step2_glns import glns
+from step2_dijkstra import dijkstra_frasal, pop2010
 
 gpickle_folder = './data/al_saiagh/'
 
@@ -87,7 +88,7 @@ def score_solution(model, gpickle_folder, n=-1, params={}):
 
 
 # Comparing models
-def run_models(gpickle_folder, n=-1, models=['mfs', 'degree', 'aco', 'glns']):
+def run_models(gpickle_folder, n=-1, models=['mfs', 'degree', 'pop2010', 'dijkstra_frasal', 'aco']):
     results = {}
     solutions_df = pd.DataFrame()
     for model in models:

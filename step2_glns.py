@@ -26,11 +26,11 @@ def matrix_from_graph(G):
     n = len(l)
     M = np.ones((n, n)) * 9999
     try:
-        max_w = max([w for (u, v, w) in G.edges.data('weight')])
+        max_w = max([w for (u, v, w) in G.edges.data('sim')])
     except:
         print('não há edges na frase {}'.format(list(G)[0][:-5]))
         return M
-    for (u, v, w) in G.edges.data('weight'):
+    for (u, v, w) in G.edges.data('sim'):
         l_u, l_v = l.index(u), l.index(v)
         if w < 1e-5:
             w = 1e-5

@@ -5,14 +5,14 @@ import numpy as np
 from collections import defaultdict
 
 def _example_graph():
-    G = nx.read_gpickle('data/gpickle/semeval2007.d000.s000.gpickle')
+    G = nx.read_gpickle('data/jcn+lesk_log/semeval2007.d000.s000.gpickle')
     print(len(G))
     return G
 
 def degree(G, params={}):
     best = {}
     vertices = defaultdict(int)
-    for (u, v, w) in G.edges(data='weight'):
+    for (u, v, w) in G.edges(data='sim'):
         if w > 0:
             vertices[v] += w
             vertices[u] += w

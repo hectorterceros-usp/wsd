@@ -11,6 +11,7 @@ from nltk.corpus import stopwords
 brown_ic = wordnet_ic.ic('ic-brown.dat')
 from nltk import FreqDist
 import numpy as np
+import pandas as pd
 import networkx as nx
 import pickle
 import re
@@ -91,7 +92,7 @@ def lesk_log(t, s, G=nx.Graph()):
     # LESK feita sobre o G para a aplicação mais simples. Estou testando para ver se funciona do jeito mais simples
     return log(lesk(t, s, G)+1)
 
-def jcn(t, s, G=nx.Graph(), backup=lesk_ratio):
+def jcn(t, s, G=nx.Graph(), backup=lesk_ratio, verbose=False):
     t_synset = wn.synset(G.nodes(data='synset')[t])
     s_synset = wn.synset(G.nodes(data='synset')[s])
     if (t_synset.pos() == s_synset.pos()) & (t_synset.pos() in ['n', 'v']):
@@ -100,11 +101,12 @@ def jcn(t, s, G=nx.Graph(), backup=lesk_ratio):
             sim = 1e5
         # sim_lesk = log(lesk(t, s, G)+1)
         sim_lesk = backup(t, s, G)
-        print('JCN: {:.3f}; LSK: {}'.format(sim * jcn_correction, sim_lesk))
+        if verbose:
+            print('JCN: {:.3f}; LSK: {}'.format(sim * jcn_correction, sim_lesk))
         return sim * jcn_correction + sim_lesk
     return backup(t, s, G)
 
-def al_saiagh(t, s, G=nx.Graph(), backup=lesk):
+def al_saiagh(t, s, G=nx.Graph(), backup=lesk, verbose=False):
     t_synset = wn.synset(G.nodes(data='synset')[t])
     s_synset = wn.synset(G.nodes(data='synset')[s])
     if (t_synset.pos() == s_synset.pos()) & (t_synset.pos() in ['n', 'v']):
@@ -114,7 +116,8 @@ def al_saiagh(t, s, G=nx.Graph(), backup=lesk):
         sim2 = -1/sim
         # sim_lesk = log(lesk(t, s, G)+1)
         sim_lesk = log(backup(t, s, G)+1)
-        print('JCN: {:.3f}; LSK: {}'.format(sim * jcn_correction, sim_lesk))
+        if verbose:
+            print('JCN: {:.3f}; LSK: {}'.format(sim * jcn_correction, sim_lesk))
         return sim2 + sim_lesk
     return log(backup(t, s, G)+1)
 
@@ -136,7 +139,7 @@ def graph_from_synsets(synsets, id, dependency=jcn, backup=lesk):
             weight = dependency(u, v, G, backup=backup)
             G.add_edge(u, v, sim=weight)
     # transformando as sims em dists
-    nx.draw(G)
+    # nx.draw(G)
     if len(G.edges()) == 0:
         # caso não haja arestas, vamos só ignorar
         return G
@@ -146,6 +149,7 @@ def graph_from_synsets(synsets, id, dependency=jcn, backup=lesk):
     max_sim = max(sims.values())
     min_sim = min(sims.values())
     dists = {}
+    # será que essa é a melhor forma de montar a distância?
     for k,v in sims.items():
         dists[k] = (max_sim-min_sim)/(max_sim-v+1)
     nx.set_edge_attributes(G, dists, 'dist')
@@ -174,11 +178,6 @@ def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio/', dep=(jcn, lesk)):
 
 ## Datasets
 
-all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
-tree = ET.parse(all_data_loc)
-root = tree.getroot()
-# sent = root[0][0]
-
 # Preparing all data
 #
 # resp = {}
@@ -192,15 +191,45 @@ root = tree.getroot()
 
 def run_for_all(folder, dep):
     start = time.time()
+    df = pd.DataFrame()
     for doc in root:
         for sent in doc:
             # print(sent.get('id'))
             print('processing ' + sent.get('id'))
-            graph_from_sentence(sent, folder, dep)
+            G = graph_from_sentence(sent, folder, dep)
+            new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges())}
+            df = df.append(new_dict, ignore_index=True)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
+    return df
+
+def run_for_all_shortened(folder, dep, n_sents=10):
+    start = time.time()
+    df = pd.DataFrame()
+    sents = []
+    for doc in root:
+        for sent in doc:
+            sents.append(sent)
+    np.random.seed(67)
+    sents = np.random.choice(sents, n_sents, replace=False)
+    for sent in sents:
+            # sent = root[0][0]
+            # print(sent.get('id'))
+            print('processing ' + sent.get('id'))
+            G = graph_from_sentence(sent, folder, dep)
+            new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges())}
+            df = df.append(new_dict, ignore_index=True)
+
+    end = time.time()
+    print('demorou {} segundos total'.format(int(end-start)))
+    return df
 
 # run_for_all()
+
+all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
+tree = ET.parse(all_data_loc)
+root = tree.getroot()
+# sent = root[0][0]
 
 # Para melhorar esse código,  vou criar os pares folder-function
 pares = {'jcn+lesk_ratio': (jcn, lesk_ratio),
@@ -208,10 +237,15 @@ pares = {'jcn+lesk_ratio': (jcn, lesk_ratio),
          'al_saiagh': (al_saiagh, lesk)}
 
 for dep in pares:
-    # dep = ('jcn+lesk_ratio', (jcn, lesk_ratio))
+    # dep = 'jcn+lesk_ratio'
+    # dep = (jcn, lesk_ratio)
     folder = './data/' + dep + '/'
     try:
         os.listdir(folder)
     except:
         os.mkdir(folder)
-    run_for_all(folder, pares[dep])
+    df = run_for_all_shortened(folder, pares[dep])
+    print(df['nodes'].value_counts())
+    print(df['edges'].value_counts())
+    with open('data/results/'+dep+'.pickle', 'wb') as f:
+        pickle.dump(df, f)

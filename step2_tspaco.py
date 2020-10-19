@@ -14,7 +14,7 @@ epsilon = 0.1
 
 def _example_graph():
     sent_id = 'senseval3.d002.s115'
-    H = nx.read_gpickle('data/gpickle/' + sent_id + '.gpickle')
+    H = nx.read_gpickle('data/al_saiagh/' + sent_id + '.gpickle')
     # print(len(H))
     return H
 # G = _example_graph()
@@ -68,7 +68,7 @@ class Ant():
             # estou com problema de convergencia, vou forçar
             else:
                 p = self.G.nodes[neighbor]['p']
-                w = self.G.edges[vertex, neighbor]['weight']
+                w = self.G.edges[vertex, neighbor]['sim']
                 d[n] = w * (p ** beta)
         # escolhendo modo de avanço - otimizado ou genérico
         q = np.random.random()
