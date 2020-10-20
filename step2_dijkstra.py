@@ -10,27 +10,27 @@ from step2_heuristic import degree
 draw = False
 
 def _example_graph():
-    G = nx.read_gpickle('data/jcn+lesk_ratio/senseval3.d000.s092.gpickle')
+    G = nx.read_gpickle('data/sample/semeval2013.d012.s010.gpickle')
     # print(len(G))
     # nx.draw(G)
     len(G.edges())
     return G
 
 
-def dijkstra(LN, inicial = None):
+def dijkstra(LN, inicial = None, measure='dist'):
     if inicial == None:
         print('eita')
         return [], 0
     vs = [v for v, id in LN.nodes(data='id') if id == inicial]
     melhor_l = np.inf
     for v in vs:
-        l = nx.shortest_path_length(LN, v, v+'.copy', weight='dist')
+        l = nx.shortest_path_length(LN, v, v+'.copy', weight=measure)
         if l < melhor_l:
             melhor_l = l
-            melhor_path = nx.shortest_path(LN, v, v+'.copy', weight='dist')
+            melhor_path = nx.shortest_path(LN, v, v+'.copy', weight=measure)
     return melhor_path[:-1], melhor_l
 
-def create_ln_from_seq(G, ids):
+def create_ln_from_seq(G, ids, measure='dist'):
     # inicial = proximo[0]
     id_colors = {'final': 1}
     for i in range(len(ids)):
@@ -52,7 +52,7 @@ def create_ln_from_seq(G, ids):
     [LN.add_node(v, id=id) for v, id in G.nodes(data='id')]
     [LN.add_node(v+'.copy', id='final', color=1) for v, id in G.nodes(data='id') if id == inicial]
     nx.set_node_attributes(LN, node_colors, name='color')
-    for (u, v, w) in nx.DiGraph(G).edges(data='dist'):
+    for (u, v, w) in nx.DiGraph(G).edges(data=measure):
         # Aqui aprender a formar um DiGraph foi importante
         if proximo[G.nodes(data='id')[u]] == G.nodes(data='id')[v]:
             LN.add_edge(u, v, dist=w)
@@ -65,29 +65,33 @@ def create_ln_from_seq(G, ids):
                 cmap=matplotlib.cm.gist_rainbow)
     return LN
 
-def dijkstra_frasal(G,  draw=False):
+def dijkstra_frasal(G, params=None, draw=False):
+    if 'measure' in params:
+        measure = params['measure']
+    else:
+        measure = 'dist'
     # vou começar usando da ordem original da frase
     ids = list(set(dict(G.nodes(data='id')).values()))
     ids.sort(key=lambda x: int(x[-3:]))
 
-    LN = create_ln_from_seq(G, ids)
+    LN = create_ln_from_seq(G, ids, measure)
     # agora, tenho que rodar o dijkstra nesse DiGraph
     try:
-        solution, value = dijkstra(LN, inicial)
+        solution, value = dijkstra(LN, ids[0], measure)
     except:
         solution, value = degree(G), 0
     return solution
 
 # Implementando Pop 2010
-def fitness(ids, G):
+def fitness(ids, G, measure='dist'):
     LN = create_ln_from_seq(G, ids)
     try:
-        solution, value = dijkstra(LN, ids[0])
+        solution, value = dijkstra(LN, ids[0], measure)
     except:
         solution, value = degree(G), 0
     return value
 
-def gera_filhos(p1, p2, G):
+def gera_filhos(p1, p2, G, measure = 'dist'):
     # r1 = 0.5
     mutation_prob = 0.05
     genes = len(p1['seq'])
@@ -123,10 +127,17 @@ def gera_filhos(p1, p2, G):
         temp = f2[mutators[0]]
         f2[mutators[0]] = f2[mutators[1]]
         f2[mutators[1]] = temp
-    return {'seq': f1, 'fitness': fitness(f1, G)}, {'seq': f2, 'fitness': fitness(f2, G)}
+    # fitness(f1, G, measure = )
+    s1 = {'seq': f1, 'fitness': fitness(f1, G, measure)}
+    s2 = {'seq': f2, 'fitness': fitness(f2, G, measure)}
+    return s1, s2
 
 # resp = dijkstra_frasal(G)
-def pop2010(G, params=None):
+def pop2010(G, params={'measure': 'sim_als'}):
+    if 'measure' in params:
+        measure = params['measure']
+    else:
+        measure = 'dist'
     if len(G.edges) < 1:
         return degree(G)
     n_generations = 5
@@ -140,7 +151,7 @@ def pop2010(G, params=None):
     # inicializando aleatoriamente, no paper disse q deu na mesma
     for i in range(pop_size):
         ids = np.random.permutation(ids)
-        pop.append({'seq': ids, 'fitness': fitness(ids, G)})
+        pop.append({'seq': ids, 'fitness': fitness(ids, G, measure)})
     # fazendo a evolução da população
     for t in range(n_generations):
         # ordenando a população por fitness
@@ -151,7 +162,7 @@ def pop2010(G, params=None):
         new_pop = []
         while len(new_pop) < pop_size*2:
             p1, p2 = np.random.choice(pop, 2, replace=False)
-            f1, f2 = gera_filhos(p1, p2, G)
+            f1, f2 = gera_filhos(p1, p2, G, measure)
             new_pop.append(f1)
             new_pop.append(f2)
         pop = pop + new_pop
@@ -161,5 +172,7 @@ def pop2010(G, params=None):
         # avaliando a evolução, visualmente
         # print(pop[0]['fitness'])
     chosen = pop[0]
-    melhor_path, melhor_l = dijkstra(create_ln_from_seq(G, chosen['seq']), chosen['seq'][0])
+    melhor_path, melhor_l = dijkstra(create_ln_from_seq(G, chosen['seq']), chosen['seq'][0], measure)
     return melhor_path
+
+# pop2010(G, params={'measure': 'dist_als'})

@@ -36,7 +36,7 @@ def _example_graph():
 #     print(v[1])
 
 class Ant():
-    def __init__(self, vertex, G, n_words = None):
+    def __init__(self, vertex, G, n_words = None, measure='sim'):
         # self.v = vertex # vou usar o path e olhar para o final
         self.G = G
         self.path = [vertex]
@@ -45,6 +45,7 @@ class Ant():
             n_words = len(set([w for (v, w) in G.nodes(data='id')]))
         self.n_words = n_words
         self.path_length = 0
+        self.measure = measure
         return None
 
     def current(self):
@@ -68,7 +69,7 @@ class Ant():
             # estou com problema de convergencia, vou forçar
             else:
                 p = self.G.nodes[neighbor]['p']
-                w = self.G.edges[vertex, neighbor]['sim']
+                w = self.G.edges[vertex, neighbor][self.measure]
                 d[n] = w * (p ** beta)
         # escolhendo modo de avanço - otimizado ou genérico
         q = np.random.random()
@@ -106,7 +107,7 @@ class Ant():
                 # global_update, preciso confirmar
         return better
 
-def aco(H, iter=3, theta = 1, lam = 0.5, tau = 1):
+def aco(H, iter=3, theta = 1, lam = 0.5, tau = 1, measure='sim'):
     # Primeiro vou testar se há mais de duas instâncias a desambiguar
     G = H.copy()
     if len(G.edges()) < 1:
@@ -121,7 +122,7 @@ def aco(H, iter=3, theta = 1, lam = 0.5, tau = 1):
     for v in G.nodes():
         # vamos localizar uma formiga em cada vértice
         G.nodes()[v]['p'] = theta
-        ants.append(Ant(v, G, n_words))
+        ants.append(Ant(v, G, n_words, measure))
     for i in range(iter):
         # print(ants[0].path)
         for j in range(n_words):
@@ -149,12 +150,12 @@ def single_aco(H, params={}):
     # correção de default por params
     if len(H.edges()) < 1:
         return []
-    default = {'iter':5, 'theta': 1, 'lam': 0.5, 'tau': 1}
+    default = {'iter':5, 'theta': 1, 'lam': 0.5, 'tau': 1, 'measure': 'sim'}
     for key in default:
         if key in params:
             default[key] = params[key]
     # Rodando a otimização
-    G = aco(H, default['iter'], default['theta'], default['lam'], default['tau'])
+    G = aco(H, default['iter'], default['theta'], default['lam'], default['tau'], default['measure'])
     # Extraindo os melhores valores
     values = dict([(v, p) for (v, p) in G.nodes(data='p')])
     best = {}
@@ -172,14 +173,14 @@ def stochastic_aco(H, params={}):
     best_result = 0
     chosen = H
     n_words = len(set([w for (v, w) in H.nodes(data='id')]))
-    default = {'iter':3, 'theta': 1, 'lam': 0.5, 'tau': 1, 'runs':10, 'random_seed':7}
+    default = {'iter':3, 'theta': 1, 'lam': 0.5, 'tau': 1, 'runs':10, 'random_seed':7, 'measure': 'sim'}
     for key in default:
         if key in params:
             default[key] = params[key]
     # random seed
     random.seed(default['random_seed'])
     for run in range(default['runs']):
-        G = aco(H, default['iter'], default['theta'], default['lam'], default['tau'])
+        G = aco(H, default['iter'], default['theta'], default['lam'], default['tau'], default['measure'])
         if G.graph['best_length'] > best_result:
             chosen = G
     values = dict([(v, p) for (v, p) in chosen.nodes(data='p')])
