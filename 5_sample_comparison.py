@@ -92,7 +92,7 @@ def lesk_log(t, s, G=nx.Graph()):
     # LESK feita sobre o G para a aplicação mais simples. Estou testando para ver se funciona do jeito mais simples
     return log(lesk(t, s, G)+1)
 
-def jcn(t, s, G=nx.Graph(), backup=lesk_ratio, verbose=False):
+def jcn(t, s, G=nx.Graph(), backup=lesk_ratio, verbose=True):
     t_synset = wn.synset(G.nodes(data='synset')[t])
     s_synset = wn.synset(G.nodes(data='synset')[s])
     if (t_synset.pos() == s_synset.pos()) & (t_synset.pos() in ['n', 'v']):
@@ -106,18 +106,18 @@ def jcn(t, s, G=nx.Graph(), backup=lesk_ratio, verbose=False):
         return sim * jcn_correction + sim_lesk
     return backup(t, s, G)
 
-def al_saiagh(t, s, G=nx.Graph(), backup=lesk, verbose=False):
+def al_saiagh(t, s, G=nx.Graph(), backup=lesk, verbose=True):
     t_synset = wn.synset(G.nodes(data='synset')[t])
     s_synset = wn.synset(G.nodes(data='synset')[s])
     if (t_synset.pos() == s_synset.pos()) & (t_synset.pos() in ['n', 'v']):
         sim = t_synset.jcn_similarity(s_synset, brown_ic)
         if sim > 1e5: # evitando estourar para os casos sim == 1e300
             sim = 1e5
-        sim2 = -1/sim
+        sim2 = sim
         # sim_lesk = log(lesk(t, s, G)+1)
         sim_lesk = log(backup(t, s, G)+1)
         if verbose:
-            print('JCN: {:.3f}; LSK: {}'.format(sim * jcn_correction, sim_lesk))
+            print('JCN: {:.3f}; LSK: {}'.format(sim2 * jcn_correction, sim_lesk))
         return sim2 + sim_lesk
     return log(backup(t, s, G)+1)
 
@@ -148,13 +148,12 @@ def graph_from_synsets(synsets, id, dependency=jcn, backup=lesk):
     for d in ['sim_jcn_ratio', 'sim_jcn_log', 'sim_als']:
         sims = {}
         for (u,v,s) in G.edges(data=d):
-            sims[u,v] = s
+            sims[u,v] = max([0, s])
         max_sim = max(sims.values())
-        min_sim = min(sims.values())
         dists = {}
         # será que essa é a melhor forma de montar a distância?
         for k,v in sims.items():
-            dists[k] = (max_sim-min_sim)/(max_sim-v+1)
+            dists[k] = (max_sim+1)/(v+1)
         nx.set_edge_attributes(G, dists, 'dist_'+d)
     return G
 

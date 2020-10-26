@@ -10,7 +10,7 @@ from step2_heuristic import degree
 draw = False
 
 def _example_graph():
-    G = nx.read_gpickle('data/sample/semeval2013.d012.s010.gpickle')
+    G = nx.read_gpickle('data/sample/senseval3.d002.s007.gpickle')
     # print(len(G))
     # nx.draw(G)
     len(G.edges())
@@ -79,16 +79,16 @@ def dijkstra_frasal(G, params=None, draw=False):
     try:
         solution, value = dijkstra(LN, ids[0], measure)
     except:
-        solution, value = degree(G), 0
+        solution, value = degree(G), np.inf
     return solution
 
 # Implementando Pop 2010
-def fitness(ids, G, measure='dist'):
+def unfitness(ids, G, measure='dist'):
     LN = create_ln_from_seq(G, ids)
     try:
         solution, value = dijkstra(LN, ids[0], measure)
     except:
-        solution, value = degree(G), 0
+        solution, value = degree(G), np.inf
     return value
 
 def gera_filhos(p1, p2, G, measure = 'dist'):
@@ -127,17 +127,17 @@ def gera_filhos(p1, p2, G, measure = 'dist'):
         temp = f2[mutators[0]]
         f2[mutators[0]] = f2[mutators[1]]
         f2[mutators[1]] = temp
-    # fitness(f1, G, measure = )
-    s1 = {'seq': f1, 'fitness': fitness(f1, G, measure)}
-    s2 = {'seq': f2, 'fitness': fitness(f2, G, measure)}
+    # unfitness(f1, G, measure = )
+    s1 = {'seq': f1, 'unfitness': unfitness(f1, G, measure)}
+    s2 = {'seq': f2, 'unfitness': unfitness(f2, G, measure)}
     return s1, s2
 
 # resp = dijkstra_frasal(G)
-def pop2010(G, params={'measure': 'sim_als'}):
+def dijkstra_pop2010(G, params={'measure': 'dist_sim_als'}):
     if 'measure' in params:
         measure = params['measure']
     else:
-        measure = 'dist'
+        measure = 'dist_sim_jcn_log'
     if len(G.edges) < 1:
         return degree(G)
     n_generations = 5
@@ -147,30 +147,32 @@ def pop2010(G, params={'measure': 'sim_als'}):
     pop_size = 2*len(ids)
     ids.sort(key=lambda x: int(x[-3:]))
     # np.random.seed(27)
-    pop = []
+    pop = [{'seq': ids, 'unfitness': unfitness(ids, G, measure)}]
     # inicializando aleatoriamente, no paper disse q deu na mesma
-    for i in range(pop_size):
+    for i in range(pop_size-1):
         ids = np.random.permutation(ids)
-        pop.append({'seq': ids, 'fitness': fitness(ids, G, measure)})
+        pop.append({'seq': ids, 'unfitness': unfitness(ids, G, measure)})
     # fazendo a evolução da população
     for t in range(n_generations):
-        # ordenando a população por fitness
-        pop.sort(key=lambda x: x['fitness'], reverse=True)
+        # ordenando a população por unfitness
+        pop.sort(key=lambda x: x['unfitness'], reverse=True)
         # gerar filhos
         # terei que fazer algum loop para gerar muitos filhos
-        # e talvez seja bom já preparar com a fitness correta
+        # e talvez seja bom já preparar com a unfitness correta
         new_pop = []
         while len(new_pop) < pop_size*2:
+            # aqui estamos selecionando aleatoriamente os pais, como o paper
             p1, p2 = np.random.choice(pop, 2, replace=False)
             f1, f2 = gera_filhos(p1, p2, G, measure)
             new_pop.append(f1)
             new_pop.append(f2)
         pop = pop + new_pop
+        # Queremos maior unfitness = menor distância
+        pop.sort(key=lambda x: x['unfitness'], reverse=True)
         # tirar parte da população
-        pop.sort(key=lambda x: x['fitness'], reverse=True)
         pop = pop[:pop_size]
         # avaliando a evolução, visualmente
-        # print(pop[0]['fitness'])
+        # print(pop[0]['unfitness'])
     chosen = pop[0]
     melhor_path, melhor_l = dijkstra(create_ln_from_seq(G, chosen['seq']), chosen['seq'][0], measure)
     return melhor_path

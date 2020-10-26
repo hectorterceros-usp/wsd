@@ -26,7 +26,7 @@ from time import time
 from step2_heuristic import degree, mfs, gold_standard
 from step2_tspaco import single_aco, stochastic_aco, aco
 from step2_glns import glns
-from step2_dijkstra import dijkstra_frasal, pop2010
+from step2_dijkstra import dijkstra_frasal, dijkstra_pop2010
 
 gpickle_folder = './data/sample/'
 
@@ -43,6 +43,8 @@ gold
 # Functions
 def path_length(G, node_ids, measure='sim_jcn_log'):
     # node_ids = pred
+    if measure[:5] != 'dist_':
+        measure = 'dist_'+measure
     l = 0
     for i in range(len(node_ids)-1):
         # i=0
@@ -62,6 +64,8 @@ sent_list = [s for s in sent_list if s[-8:] == '.gpickle']
 
 
 def measure_sentence(sent_id, model, gpickle_folder, params={}):
+    # também estou juntando o que preciso do score_sentence()
+    # assim tenho as duas informações aqui
     if 'measure' not in params:
         params['measure'] = 'dist'
     # sent_id = 'semeval2013.d012.s010'
@@ -69,10 +73,13 @@ def measure_sentence(sent_id, model, gpickle_folder, params={}):
     gpickle_file = gpickle_folder + sent_id + '.gpickle'
     G = nx.read_gpickle(gpickle_file)
     # list(G)
+    print(G.edges(data='sim_als'))
+
     # print(sent_id)
     # params={'measure': 'dist_als'}
     # 'semeval2013.d012.s010.t002.c000.copy'
     pred = model(G, params)
+    tp, fp = 0, 0
     l = path_length(G, pred, measure=params['measure'])
     solution = {}
     for p in pred:
@@ -81,6 +88,10 @@ def measure_sentence(sent_id, model, gpickle_folder, params={}):
         keys = []
         for lemma in wn.synset(G.nodes()[p]['synset']).lemmas():
             keys.append(lemma.key())
+        if len(set(gold[inst_id]) & set(keys)) > 0:
+            tp += 1
+        else:
+            fp += 1
         solution[inst_id] = keys
     del(G)
     return l, solution
@@ -103,15 +114,15 @@ def measure_solution(model, gpickle_folder, n=-1, params={}):
     avg_l = np.mean([sent for sent in sent_result.values()])
     # sum_acc = sum_tp / (sum_tp + sum_fp)
     print('average length: ' + str(avg_l))
-    return avg_l, solutions
+    return sent_result, solutions
 
 
 # Comparing models
 def run_models(gpickle_folder, n=-1):
-    models = ['mfs',
-              'gold_standard',
+    models = ['gold_standard',
+              'mfs',
               'degree',
-              'pop2010',
+              'dijkstra_pop2010',
               'dijkstra_frasal',
               'aco']
     results = {}
@@ -121,12 +132,12 @@ def run_models(gpickle_folder, n=-1):
         print('model: {}'.format(model_name))
         # model_name = 'gold'
         # n = -1
-        if model_name == 'aco':
-            measures = ['dist_sim_jcn_ratio', 'dist_sim_jcn_log', 'dist_sim_als']
+        if model_name in ['aco', 'degree', 'gold_standard']:
+            measures = ['sim_jcn_ratio', 'sim_jcn_log', 'sim_als']
             model = single_aco
             params={'iter':10}
         else:
-            measures = ['sim_jcn_ratio', 'sim_jcn_log', 'sim_als']
+            measures = ['dist_sim_jcn_ratio', 'dist_sim_jcn_log', 'dist_sim_als']
             model = eval(model_name)
             params={}
         for m in measures:
@@ -141,52 +152,11 @@ def run_models(gpickle_folder, n=-1):
         solutions_df[model_name] = temp
         print('demorou {} segundos total'.format(int(end-start)))
     return results, solutions_df
+r, s = run_models(gpickle_folder)
+pd.DataFrame(r).to_csv('data/results/comparacao_modelos.csv',
+                       sep=';', decimal=',')
 
 
-def save_results(sol_df, gpickle_folder):
-    sol_df.columns
-    sol_df['gold'] = pd.Series(gold)
-
-    def compare_columns(d, c1, c2):
-        try:
-            return len([v for v in d[c1] if v in d[c2]]) >= 1
-        except:
-            return False
-    sol_df['mfs_gold'] = sol_df.apply(compare_columns, axis=1, args=('mfs', 'gold'))
-    sol_df['aco_gold'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'gold'))
-    sol_df['deg_gold'] = sol_df.apply(compare_columns, axis=1, args=('degree', 'gold'))
-    sol_df['glns_gold'] = sol_df.apply(compare_columns, axis=1, args=('glns', 'gold'))
-    sol_df['aco_mfs'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'mfs'))
-    sol_df['deg_mfs'] = sol_df.apply(compare_columns, axis=1, args=('deg', 'mfs'))
-    sol_df['glns_mfs'] = sol_df.apply(compare_columns, axis=1, args=('glns', 'mfs'))
-    sol_df['aco_glns'] = sol_df.apply(compare_columns, axis=1, args=('aco', 'glns'))
-
-    with open(gpickle_folder+'/results.pickle', 'wb') as f:
-        pickle.dump(sol_df, f)
-    print('concluído!')
-    return None
-
-
-def all_models(n=50):
-    # results, sol_df = run_models(models=[degree, mfs, aco, glns])
-    for special_folder in ['jcn+lesk_ratio',
-                           'jcn+lesk_log', 'al_saiagh']:
-        print('###' + special_folder)
-        gpickle_folder = './data/' + special_folder + '/'
-        results, sol_df = run_models(gpickle_folder, n=n)
-        # save_results(sol_df, gpickle_folder)
-    return None
-all_models(n=-1)
-#
-#
-# ### Trabalhando os melhores resultados
-# with open('./data/resultados.pickle', 'rb') as f:
-#     sol_df = pickle.load(f)
-# print('concluído!')
-# sol_df
-# sol_df.columns
-# pd.crosstab(sol_df['mfs_gold'], sol_df['aco_gold'])
-# pd.crosstab(sol_df['mfs_gold'], sol_df['deg_gold'])
-
-### Comparando stochastic_aco com single_aco
-# Para ser justo, compararei 10x10, 100x1 e 20x5
+sent_id = 'semeval2013.d012.s010'
+1/wn.jcn_similarity(wn.synset('cat.n.1'), wn.synset('car.n.1'), brown_ic)
+1/wn.jcn_similarity(wn.synset('cat.n.1'), wn.synset('sadness.n.1'), brown_ic)
