@@ -244,7 +244,7 @@ for dep in pares:
         os.listdir(folder)
     except:
         os.mkdir(folder)
-    df = run_for_all_shortened(folder, pares[dep])
+    df = run_for_all(folder, pares[dep])
     print(df['nodes'].value_counts())
     print(df['edges'].value_counts())
     with open('data/results/'+dep+'.pickle', 'wb') as f:

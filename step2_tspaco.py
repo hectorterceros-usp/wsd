@@ -13,12 +13,13 @@ global_lambda = 0.1
 epsilon = 0.1
 
 def _example_graph():
-    sent_id = 'senseval3.d002.s115'
-    H = nx.read_gpickle('data/al_saiagh/' + sent_id + '.gpickle')
+    sent_id = 'senseval3.d002.s007'
+    H = nx.read_gpickle('data/sample/' + sent_id + '.gpickle')
     # print(len(H))
     return H
 # G = _example_graph()
 # list(G.nodes)
+# vertex, neighbor = 'senseval3.d002.s007.t000.c005', 'senseval3.d002.s007.t006.c002'
 #
 # for n in G.nodes():
 #     # print(n)
@@ -36,7 +37,7 @@ def _example_graph():
 #     print(v[1])
 
 class Ant():
-    def __init__(self, vertex, G, n_words = None, measure='sim'):
+    def __init__(self, vertex, G, n_words = None, measure='sim_jcn_log'):
         # self.v = vertex # vou usar o path e olhar para o final
         self.G = G
         self.path = [vertex]
@@ -107,7 +108,7 @@ class Ant():
                 # global_update, preciso confirmar
         return better
 
-def aco(H, iter=3, theta = 1, lam = 0.5, tau = 1, measure='sim'):
+def aco(H, iter=3, theta = 1, lam = 0.5, tau = 1, measure='sim_jcn_log'):
     # Primeiro vou testar se há mais de duas instâncias a desambiguar
     G = H.copy()
     if len(G.edges()) < 1:
@@ -122,7 +123,7 @@ def aco(H, iter=3, theta = 1, lam = 0.5, tau = 1, measure='sim'):
     for v in G.nodes():
         # vamos localizar uma formiga em cada vértice
         G.nodes()[v]['p'] = theta
-        ants.append(Ant(v, G, n_words, measure))
+        ants.append(Ant(v, G, n_words, measure=measure))
     for i in range(iter):
         # print(ants[0].path)
         for j in range(n_words):
@@ -150,7 +151,7 @@ def single_aco(H, params={}):
     # correção de default por params
     if len(H.edges()) < 1:
         return []
-    default = {'iter':5, 'theta': 1, 'lam': 0.5, 'tau': 1, 'measure': 'sim'}
+    default = {'iter':5, 'theta': 1, 'lam': 0.5, 'tau': 1, 'measure': 'sim_jcn_log'}
     for key in default:
         if key in params:
             default[key] = params[key]
@@ -173,7 +174,7 @@ def stochastic_aco(H, params={}):
     best_result = 0
     chosen = H
     n_words = len(set([w for (v, w) in H.nodes(data='id')]))
-    default = {'iter':3, 'theta': 1, 'lam': 0.5, 'tau': 1, 'runs':10, 'random_seed':7, 'measure': 'sim'}
+    default = {'iter':3, 'theta': 1, 'lam': 0.5, 'tau': 1, 'runs':10, 'random_seed':7, 'measure': 'sim_jcn_log'}
     for key in default:
         if key in params:
             default[key] = params[key]

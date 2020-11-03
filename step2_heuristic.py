@@ -8,7 +8,7 @@ from nltk.corpus import wordnet as wn # for gold
 
 
 def _example_graph():
-    G = nx.read_gpickle('data/jcn+lesk_log/semeval2007.d000.s000.gpickle')
+    G = nx.read_gpickle('data/jcn+lesk_log/semeval2013.d012.s010.gpickle')
     print(len(G))
     return G
 
@@ -28,6 +28,25 @@ def degree(G, params={}):
         if w not in best:
             best[w] = (v, d)
         elif best[w][1] < d:
+            best[w] = (v, d)
+    return [v for (v, d) in best.values()]
+
+def degree_sim(G, params={}):
+    if 'measure' in params:
+        measure = params['measure']
+    else:
+        measure = 'sim_jcn_log'
+    best = {}
+    vertices = defaultdict(int)
+    for (u, v, w) in G.edges(data=measure):
+        if w > 0:
+            vertices[v] += w
+            vertices[u] += w
+    for (v, w) in G.nodes(data='id'):
+        d = vertices[v]
+        if w not in best:
+            best[w] = (v, d)
+        elif best[w][1] > d:
             best[w] = (v, d)
     return [v for (v, d) in best.values()]
 
@@ -51,5 +70,6 @@ def gold_standard(G, params={}):
         for l in wn.synset(G.nodes()[v]['synset']).lemmas():
             keys.append(l.key())
         if len(set(gold[p]) & set(keys)) > 0:
+            # print(v, p)
             best[p] = v
     return [best[v] for v in best]

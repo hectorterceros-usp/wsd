@@ -4,6 +4,7 @@ import networkx as nx
 import numpy as np
 from collections import defaultdict
 import matplotlib
+import matplotlib.pyplot as plt
 from step2_heuristic import degree
 # import matplotlib.pyplot as plt
 
@@ -14,13 +15,16 @@ def _example_graph():
     # print(len(G))
     # nx.draw(G)
     len(G.edges())
+    # np.mean([w for (u, v, w) in G.edges(data='dist_sim_jcn_log')])
+    # np.mean([w for (u, v, w) in G.edges(data='sim_jcn_log')])
     return G
 
 
-def dijkstra(LN, inicial = None, measure='dist'):
+def dijkstra(LN, inicial = None, measure='dist_sim_jcn_log'):
+    # inicial = ids[0]
     if inicial == None:
         print('eita')
-        return [], 0
+        return [], np.inf
     vs = [v for v, id in LN.nodes(data='id') if id == inicial]
     melhor_l = np.inf
     for v in vs:
@@ -30,7 +34,7 @@ def dijkstra(LN, inicial = None, measure='dist'):
             melhor_path = nx.shortest_path(LN, v, v+'.copy', weight=measure)
     return melhor_path[:-1], melhor_l
 
-def create_ln_from_seq(G, ids, measure='dist'):
+def create_ln_from_seq(G, ids, measure='dist_sim_jcn_log'):
     # inicial = proximo[0]
     id_colors = {'final': 1}
     for i in range(len(ids)):
@@ -77,23 +81,23 @@ def dijkstra_frasal(G, params=None, draw=False):
     LN = create_ln_from_seq(G, ids, measure)
     # agora, tenho que rodar o dijkstra nesse DiGraph
     try:
-        solution, value = dijkstra(LN, ids[0], measure)
+        solution, value = dijkstra(LN, ids[0], 'dist')
     except:
         solution, value = degree(G), np.inf
     return solution
 
 # Implementando Pop 2010
 def unfitness(ids, G, measure='dist'):
-    LN = create_ln_from_seq(G, ids)
+    LN = create_ln_from_seq(G, ids, measure)
     try:
-        solution, value = dijkstra(LN, ids[0], measure)
+        solution, value = dijkstra(LN, ids[0], 'dist')
     except:
         solution, value = degree(G), np.inf
     return value
 
 def gera_filhos(p1, p2, G, measure = 'dist'):
     # r1 = 0.5
-    mutation_prob = 0.05
+    mutation_prob = 0.1
     genes = len(p1['seq'])
     corte = np.random.randint(genes)
     # inicializando com um parente
@@ -133,7 +137,7 @@ def gera_filhos(p1, p2, G, measure = 'dist'):
     return s1, s2
 
 # resp = dijkstra_frasal(G)
-def dijkstra_pop2010(G, params={'measure': 'dist_sim_als'}):
+def dijkstra_pop2010(G, params={'measure': 'dist_sim_jcn_log'}):
     if 'measure' in params:
         measure = params['measure']
     else:
@@ -141,6 +145,8 @@ def dijkstra_pop2010(G, params={'measure': 'dist_sim_als'}):
     if len(G.edges) < 1:
         return degree(G)
     n_generations = 5
+    if 'generations' in params:
+        n_generations = params['generations']
     # no paper foram entre 500 e 1500... terei que repensar isso
     ids = list(set(dict(G.nodes(data='id')).values()))
     # de acordo com o paper, essa foi a população usada
@@ -148,6 +154,7 @@ def dijkstra_pop2010(G, params={'measure': 'dist_sim_als'}):
     ids.sort(key=lambda x: int(x[-3:]))
     # np.random.seed(27)
     pop = [{'seq': ids, 'unfitness': unfitness(ids, G, measure)}]
+    # print('frasal: ', pop[0]['unfitness'])
     # inicializando aleatoriamente, no paper disse q deu na mesma
     for i in range(pop_size-1):
         ids = np.random.permutation(ids)
@@ -155,7 +162,7 @@ def dijkstra_pop2010(G, params={'measure': 'dist_sim_als'}):
     # fazendo a evolução da população
     for t in range(n_generations):
         # ordenando a população por unfitness
-        pop.sort(key=lambda x: x['unfitness'], reverse=True)
+        # pop.sort(key=lambda x: x['unfitness'], reverse=True)
         # gerar filhos
         # terei que fazer algum loop para gerar muitos filhos
         # e talvez seja bom já preparar com a unfitness correta
@@ -167,14 +174,20 @@ def dijkstra_pop2010(G, params={'measure': 'dist_sim_als'}):
             new_pop.append(f1)
             new_pop.append(f2)
         pop = pop + new_pop
-        # Queremos maior unfitness = menor distância
-        pop.sort(key=lambda x: x['unfitness'], reverse=True)
+        # len(pop)
+        # Queremos menor unfitness = menor distância
+        pop.sort(key=lambda x: x['unfitness'], reverse=False)
+        # testando se o primeiro é mesmo o menor
+        chosen = pop[0]['unfitness']
+        if any([i['unfitness'] < chosen for i in pop]):
+            print('não está ordenando')
         # tirar parte da população
         pop = pop[:pop_size]
         # avaliando a evolução, visualmente
         # print(pop[0]['unfitness'])
     chosen = pop[0]
-    melhor_path, melhor_l = dijkstra(create_ln_from_seq(G, chosen['seq']), chosen['seq'][0], measure)
+    melhor_path, melhor_l = dijkstra(create_ln_from_seq(G, chosen['seq'], measure),
+                                     chosen['seq'][0], 'dist')
     return melhor_path
 
 # pop2010(G, params={'measure': 'dist_als'})
