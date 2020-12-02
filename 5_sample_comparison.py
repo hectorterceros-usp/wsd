@@ -18,13 +18,33 @@ import re
 import time
 from math import log
 
+# para preparar as strings:
+import string
+from nltk import PorterStemmer
+from nltk.tokenize import word_tokenize
+
 # para salvar os gtsp preparados
 import os
 # import gzip
 # from collections import defaultdict
+
+# Preparations
+
 jcn_correction=1
+stemmer=PorterStemmer()
 
 ## Functions
+
+# There was no prep for these texts
+def prep_text(input):
+    # input = wn.synset('cat.n.01').definition()
+    text = input.translate(str.maketrans('', '', string.punctuation))
+    text = text.strip()
+    text = word_tokenize(text)
+    text = [w for w in text if w not in stopwords.words('english')]
+    text = [stemmer.stem(w) for w in text]
+    # text = [w for w in text if w not in stopwords.words('english')]
+    return ' '.join(text)
 
 def extend_gloss(s, hyper_hypo=True, mero_holo=True, domain=True):
     l = []
@@ -58,7 +78,7 @@ def extend_gloss(s, hyper_hypo=True, mero_holo=True, domain=True):
         text += ss.definition()
     text = [w for w in text.split() if w not in stopwords.words('english')]
     # return FreqDist(text)
-    return ' . '.join(text)
+    return prep_text(' . '.join(text))
 
 def lesk_norm(t, s, G=nx.Graph()):
     # LESK feita sobre o G para a aplicação mais simples. Estou testando para ver se funciona do jeito mais simples
@@ -139,22 +159,34 @@ def graph_from_synsets(synsets, id, dependency=jcn, backup=lesk):
             jcn_ratio = jcn(u, v, G, backup=lesk_ratio)
             jcn_log = jcn(u, v, G, backup=lesk_log)
             als = al_saiagh(u, v, G, backup=lesk)
-            G.add_edge(u, v, sim_jcn_ratio=jcn_ratio, sim_jcn_log=jcn_log, sim_als=als)
+            sim_lesk = lesk(u, v, G)
+            G.add_edge(u, v,
+                       sim_jcn_ratio=jcn_ratio,
+                       sim_jcn_log=jcn_log,
+                       sim_als=als,
+                       sim_lesk=sim_lesk)
     # transformando as sims em dists
     # nx.draw(G)
     if len(G.edges()) == 0:
         # caso não haja arestas, vamos só ignorar
         return G
-    for d in ['sim_jcn_ratio', 'sim_jcn_log', 'sim_als']:
+    n_ids = len(set(G.nodes(data='id')))
+    for d in ['sim_jcn_log', 'sim_lesk']:
         sims = {}
         for (u,v,s) in G.edges(data=d):
             sims[u,v] = max([0, s])
         max_sim = max(sims.values())
         dists = {}
+        direct_dists = {}
+        normalized_dists = {}
         # será que essa é a melhor forma de montar a distância?
         for k,v in sims.items():
             dists[k] = (max_sim+1)/(v+1)
+            direct_dists[k] = 1/(v+1)
+            normalized_dists = 1/(n_ids*v+1)
         nx.set_edge_attributes(G, dists, 'dist_'+d)
+        nx.set_edge_attributes(G, direct_dists, 'direct_dist_'+d)
+        nx.set_edge_attributes(G, normalized_dists, 'normalized_dist_'+d)
     return G
 
 def write_graph(G, id='example', folder='./data/jcn+lesk_ratio/'):
@@ -199,7 +231,8 @@ def run_for_all(folder, dep):
             # print(sent.get('id'))
             print('processing ' + sent.get('id'))
             G = graph_from_sentence(sent, folder, dep)
-            new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges())}
+            n_ids = len(set([i for k, i in G.nodes(data='id')]))
+            new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges()), 'clusters': n_ids}
             df = df.append(new_dict, ignore_index=True)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
@@ -213,13 +246,16 @@ def run_for_all_shortened(folder, dep, n_sents=10):
         for sent in doc:
             sents.append(sent)
     np.random.seed(67)
+    if n_sents < 0:
+        n_sents = len(sents)
     sents = np.random.choice(sents, n_sents, replace=False)
     for sent in sents:
             # sent = root[0][0]
             # print(sent.get('id'))
             print('processing ' + sent.get('id'))
             G = graph_from_sentence(sent, folder, dep)
-            new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges())}
+            n_ids = len(set([i for k, i in G.nodes(data='id')]))
+            new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges()), 'clusters': n_ids}
             df = df.append(new_dict, ignore_index=True)
 
     end = time.time()
@@ -242,12 +278,17 @@ pares = {'jcn+lesk_ratio': (jcn, lesk_ratio),
 # dep = 'jcn+lesk_ratio'
 # dep = (jcn, lesk_ratio)
 folder = './data/sample/'
-# try:
-#     os.listdir(folder)
-# except:
-# os.mkdir(folder)
-df = run_for_all_shortened(folder, (jcn, lesk))
-print(df['nodes'].value_counts())
-print(df['edges'].value_counts())
+try:
+    os.listdir(folder)
+except:
+    os.mkdir(folder)
+# df = run_for_all_shortened(folder, (jcn, lesk), n_sents=10)
+# start = time.time()
+# df = run_for_all_shortened(folder, (jcn, lesk), n_sents=10)
+df = run_for_all(folder, (jcn, lesk))
+# end = time.time()
+# print('demorou {:d} segundos total'.format(int(end-start)))
+# print(df['nodes'].value_counts())
+# print(df['edges'].value_counts())
 with open('data/results/sample.pickle', 'wb') as f:
     pickle.dump(df, f)

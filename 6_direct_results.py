@@ -15,6 +15,7 @@ import networkx as nx
 import pickle
 import re
 import pandas as pd
+import matplotlib.pyplot as plt
 import sys
 import pickle
 
@@ -25,7 +26,7 @@ from collections import defaultdict
 from time import time
 
 # Taking from the step2 models
-from step2_heuristic import degree, mfs, gold_standard
+from step2_heuristic import degree, degree_dist, mfs, gold_standard
 from step2_tspaco import single_aco, stochastic_aco, aco
 from step2_glns import glns
 from step2_dijkstra import dijkstra_frasal, dijkstra_pop2010
@@ -50,7 +51,7 @@ pred_dict = {}
 # Functions
 def path_length(G, node_ids, measure='sim_jcn_log'):
     # node_ids = pred
-    if measure[:5] != 'dist_':
+    if measure[:4] == 'sim_':
         measure = 'dist_'+measure
     try:
         l = G.edges[node_ids[-1], node_ids[0]][measure]
@@ -73,17 +74,20 @@ sent_list = os.listdir(gpickle_folder)
 sent_list = [s for s in sent_list if s[-8:] == '.gpickle']
 
 
+# measure_sentence(sent_id, model, gpickle_folder)
+# measure_sentence('semeval2007.d000.s000', degree_dist, gpickle_folder,params={'measure': 'direct_dist_sim_lesk'})
 def measure_sentence(sent_id, model, gpickle_folder, params={}):
     # também estou juntando o que preciso do score_sentence()
     # assim tenho as duas informações aqui
     if 'measure' not in params:
         params['measure'] = 'dist_sim_jcn_log'
-    # sent_id = 'semeval2013.d012.s010'
-    # model = gold_standard
+    # sent_id = 'semeval2007.d000.s000'
+    # model = degree_dist
     gpickle_file = gpickle_folder + sent_id + '.gpickle'
     G = nx.read_gpickle(gpickle_file)
-    # len(G)
-    # print(G.edges(data='sim_als'))
+    n = len(G)
+    # print(G.edges(data='direct_dist_sim_jcn_log'))
+    # params['measure'] = 'direct_dist_sim_jcn_log'
     # print(sent_id)
     # params={'measure': 'dist_sim_jcn_ratio'}
     # 'semeval2013.d012.s010.t002.c000.copy'
@@ -91,7 +95,7 @@ def measure_sentence(sent_id, model, gpickle_folder, params={}):
     pred_name = model.__name__ + '__' + sent_id
     pred_dict[pred_name] = pred
     tp, fp = 0, 0
-    l = path_length(G, pred, measure=params['measure'])
+    l = path_length(G, node_ids=pred, measure=params['measure'])
     solution = {}
     for p in pred:
         # p = pred[0]
@@ -106,7 +110,7 @@ def measure_sentence(sent_id, model, gpickle_folder, params={}):
         solution[inst_id] = keys
     del(G)
     # acc = tp / (tp + fp)
-    return l, solution, tp, fp
+    return l, solution, tp, fp, n
 # measure_sentence(sent_id, model)
 
 def measure_solution(model, gpickle_folder, n=-1, params={}):
@@ -122,12 +126,13 @@ def measure_solution(model, gpickle_folder, n=-1, params={}):
     for file in sent_list:
         # file = sent_list[0]
         sent_id = file[:-8]
-        l, solution, tp, fp = measure_sentence(sent_id, model, gpickle_folder, params)
-        sent_result[file] = l
+        l, solution, tp, fp, n = measure_sentence(sent_id, model, gpickle_folder, params)
+        name = file + '__' + str(tp+fp) + '_' + str(n)
+        sent_result[name] = l
         solutions[sent_id] = solution
         sum_tp += tp
         sum_fp += fp
-        accs[file] = tp / (tp + fp)
+        accs[name] = tp / (tp + fp)
     acc = sum_tp/(sum_tp + sum_fp)
     avg_l = np.mean([sent for sent in sent_result.values()])
     # sum_acc = sum_tp / (sum_tp + sum_fp)
@@ -140,9 +145,10 @@ def run_models(gpickle_folder, n=-1, complexity=100):
     models = ['gold_standard',
               'mfs',
               'degree',
+              'degree_dist',
               'dijkstra_frasal',
-              'dijkstra_pop2010',
-              'single_aco',
+              # 'dijkstra_pop2010',
+              # 'single_aco',
               # 'stochastic_aco',
               ]
     results = {}
@@ -152,14 +158,16 @@ def run_models(gpickle_folder, n=-1, complexity=100):
     for model_name in models:
         start = time()
         print('model: {}'.format(model_name))
-        # model_name = 'gold'
+        # model_name = 'gold_standard'
         # n = -1
         # measures = ['dist_sim_jcn_ratio', 'dist_sim_jcn_log']
-        measures = ['dist_sim_jcn_log']
+        measures = ['dist_sim_jcn_log', 'dist_sim_lesk',
+                    'direct_dist_sim_jcn_log', 'direct_dist_sim_lesk',
+                    'normalized_dist_sim_jcn_log', 'normalized_dist_sim_lesk']
         params={}
         model = eval(model_name)
-        if model_name in ['single_aco', 'degree', 'gold_standard']:
-            measures = ['sim_jcn_log']
+        if model_name in ['single_aco', 'degree']:
+            measures = ['sim_jcn_log', 'sim_lesk']
             params['iter'] = 10 * complexity
         if model_name in ['dijkstra_pop2010']:
             params['generations'] = complexity
@@ -181,6 +189,7 @@ def run_models(gpickle_folder, n=-1, complexity=100):
         solutions_df[model_name] = temp
         print('demorou {} segundos total'.format(int(end-start)))
     return results, solutions_df, all_accs
+
 # inverter os dicts
 def inverte(r):
     alt_r = {}
@@ -188,7 +197,8 @@ def inverte(r):
         # print(k, i)
         for (kk, ii) in i.items():
             # print('dentro', kk, ii)
-            tipo = kk.split('_')[-1]
+            # tipo = kk.split('_')[-1]
+            tipo = kk
             if tipo not in alt_r:
                 alt_r[tipo] = {k: ii}
             else:
@@ -203,19 +213,82 @@ def main():
     except:
         complexity = 100
     r, s, a = run_models(gpickle_folder, complexity=complexity)
-    with open('data/results/sample_solutions.pickle', 'wb') as f:
+    with open('data/results/all_solutions.pickle', 'wb') as f:
         pickle.dump(s, f)
 
-    log_df = pd.DataFrame(inverte(r)['log']).join(
-        pd.DataFrame(inverte(a)['log']), lsuffix='_dist', rsuffix='_acc')
+    # inverte(r)
+    log_df = pd.DataFrame(inverte(r)['direct_dist_sim_jcn_log']).join(
+        pd.DataFrame(inverte(a)['direct_dist_sim_jcn_log']), lsuffix='_dist', rsuffix='_acc')
+    log_df['k'] = [int(v.split('_')[-2]) for v in list(log_df.index)]
+    log_df = log_df.loc[log_df['k'] > 1].copy()
+    gold_df = log_df[['gold_standard_dist', 'dijkstra_frasal_dist', 'dijkstra_frasal_acc']].copy()
+    gold_df['ratio'] = gold_df['gold_standard_dist']/gold_df['dijkstra_frasal_dist']
+    gold_df['n'] = [int(v.split('_')[-1]) for v in list(gold_df.index)]
+    gold_df['k'] = [int(v.split('_')[-2]) for v in list(gold_df.index)]
+    plt.figure()
+    plt.scatter(gold_df['k'], gold_df['dijkstra_frasal_dist'], alpha=0.3, c='r')
+    plt.scatter(gold_df['k'], gold_df['gold_standard_dist'], alpha=0.3)
+    plt.title('Distância total do circuito do gabarito por número de clusters')
+    plt.ylabel('Distância total (1/sim)')
+    plt.xlabel('Número de clusters (k)')
+    plt.legend(['dijkstra', 'gold_standard'])
+    # plt.scatter(gold_df['k'], gold_df['gold_standard_dist'], color='r')
+    # plt.show()
+    plt.savefig('data/plots/direct_k.png')
+    plt.close()
+
+    plt.figure()
+    plt.scatter(gold_df['n'], gold_df['dijkstra_frasal_dist'], alpha=0.3, c='r')
+    plt.scatter(gold_df['n'], gold_df['gold_standard_dist'], alpha=0.3)
+    plt.title('Distância total do circuito do gabarito por número de vértices')
+    plt.ylabel('Distância total (1/sim)')
+    plt.xlabel('Número de vértices (n)')
+    plt.legend(['dijkstra', 'gold_standard'])
+    # plt.scatter(gold_df['k'], gold_df['gold_standard_dist'], color='r')
+    plt.savefig('data/plots/direct_n.png')
+    plt.close()
+
+    plt.figure()
+    plt.scatter(gold_df['n'], gold_df['dijkstra_frasal_dist'], alpha=0.3, c='r')
+    plt.scatter(gold_df['n'], gold_df['gold_standard_dist'], alpha=0.3)
+    plt.title('Distância média do circuito do gabarito por número de vértices')
+    plt.ylabel('Distância total (k/sim)')
+    plt.xlabel('Número de vértices (n)')
+    plt.legend(['dijkstra', 'gold_standard'])
+    # plt.scatter(gold_df['k'], gold_df['gold_standard_dist'], color='r')
+    plt.savefig('data/plots/normalized_n.png')
+    plt.close()
     # ratio_df = pd.DataFrame(inverte(r)['ratio']).join(
     #     pd.DataFrame(inverte(a)['ratio']), lsuffix='_dist', rsuffix='_acc')
 
+    # relação entre dist e acurácia
+    gold_df = log_df[['gold_standard_dist', 'dijkstra_frasal_dist', 'dijkstra_frasal_acc']].copy()
+    gold_df['ratio'] = gold_df['gold_standard_dist']/gold_df['dijkstra_frasal_dist']
+    gold_df['n'] = [int(v.split('_')[-1]) for v in list(gold_df.index)]
+    gold_df['k'] = [int(v.split('_')[-2]) for v in list(gold_df.index)]
+    gold_df['ratio_cut'] = (gold_df['ratio']/0.5).apply(int)*0.5
+    plt.figure()
+    plt.scatter(gold_df['ratio'], gold_df['dijkstra_frasal_acc'], alpha=0.3, c='r')
+    medias = gold_df.groupby('ratio_cut')['dijkstra_frasal_acc'].agg('mean')
+    plt.plot(medias, c='b')
+    # plt.scatter(gold_df['k'], gold_df['gold_standard_dist'], alpha=0.3)
+    plt.title('Dispersão da acurácia frente à diferença entre o gold standard e menor caminho')
+    plt.ylabel('Acurácia do menor caminho (Dijkstra)')
+    plt.xlabel('Razão entre o comprimento do Gold Standard e o Dijkstra')
+    plt.legend(['média', 'dados'])
+    # plt.scatter(gold_df['k'], gold_df['gold_standard_dist'], color='r')
+    # plt.show()
+    plt.savefig('data/plots/acc_dist.png')
+    plt.close()
+
     # para salvar esses resultados de forma mais organizada e inteligente
+
+    log_df = pd.DataFrame(inverte(r)['normalized_dist_sim_jcn_log']).join(
+        pd.DataFrame(inverte(a)['normalized_dist_sim_jcn_log']), lsuffix='_dist', rsuffix='_acc')
     cols = log_df.columns.tolist()
     cols.sort()
 
-    excel = pd.ExcelWriter('data/results/comparação_modelos.xls')
+    excel = pd.ExcelWriter('data/results/comparação_modelos_all.xls')
     log_df[cols].to_excel(excel, sheet_name='log')
     # ratio_df[cols].to_excel(excel, sheet_name='ratio')
     excel.close()
@@ -224,3 +297,5 @@ if __name__ == "__main__":
     main()
     with open('data/results/preds.pickle', 'wb') as f:
         pickle.dump(pred_dict, f)
+
+# print(s['degree'] == s['degree_dist'])

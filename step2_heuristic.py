@@ -31,11 +31,11 @@ def degree(G, params={}):
             best[w] = (v, d)
     return [v for (v, d) in best.values()]
 
-def degree_sim(G, params={}):
+def degree_dist(G, params={}):
     if 'measure' in params:
         measure = params['measure']
     else:
-        measure = 'sim_jcn_log'
+        measure = 'dist_sim_jcn_log'
     best = {}
     vertices = defaultdict(int)
     for (u, v, w) in G.edges(data=measure):

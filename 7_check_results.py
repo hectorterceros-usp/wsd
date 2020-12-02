@@ -45,25 +45,29 @@ gold
 with open('data/results/preds.pickle', 'rb') as f:
     s = pickle.load(f)
 s
-s['degree__semeval2007.d007.s025    ']
-s['single_aco__senseval3.d002.s007']
 sent_list = list(set([i.split('__')[1] for i in list(s.keys())]))
-sent_list = os.listdir(gpickle_folder)
-['semeval2013.d012.s010',
- 'semeval2013.d003.s009',
- 'semeval2015.d001.s049',
- 'semeval2013.d000.s006',
- 'semeval2013.d001.s005',
- 'semeval2015.d001.s004',
- 'semeval2013.d010.s019',
- 'semeval2007.d000.s000',
- 'senseval3.d002.s007',
- 'semeval2013.d007.s025']
-sent_list = [s[:-8] for s in sent_list if s[-8:] == '.gpickle']
 for sent in sent_list:
     print('###')
     teste = {}
     for model in ['degree', 'dijkstra_frasal', 'dijkstra_pop2010']:
+        # print(s[model + '__' + sent])
+        teste[model] = s[model + '__' + sent]
+    for k, v in teste.items():
+        choices = [w.split('.')[3:] for w in v]
+        choices.sort()
+        # print(choices)
+        teste[k] = choices
+    expected_value = next(iter(teste.values()))
+    all_equal = all(value == expected_value for value in teste.values())
+    # print(sent + ': ' + str(all_equal))
+    print(sent + ', degree + frasal: ' + str(teste['degree'] == teste['dijkstra_frasal']))
+    print(sent + ', degree + pop2010: ' + str(teste['degree'] == teste['dijkstra_pop2010']))
+    print(sent + ', pop2010 + frasal: ' + str(teste['dijkstra_pop2010'] == teste['dijkstra_frasal']))
+
+for sent in sent_list:
+    print('###')
+    teste = {}
+    for model in ['degree', 'degree_dist']:
         # print(s[model + '__' + sent])
         teste[model] = s[model + '__' + sent]
     for k, v in teste.items():
@@ -97,3 +101,5 @@ for c in wn.synsets('typical'):
     print(c.definition())
     print([l.key() for l in c.lemmas()])
 gold['semeval2015.d001.s049.t002']
+
+# Passando a analisar a aplicabilidade da métrica de similaridade

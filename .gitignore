@@ -1,4 +1,7 @@
 **.csv
+**.ods
+**.xls
+**.xlsx
 **.gz
 SourceCode+ExecutableFile/*
 **.pickle

@@ -1,0 +1,57 @@
+###
+semeval2007.d000.s000, degree + frasal: True
+semeval2007.d000.s000, degree + pop2010: True
+semeval2007.d000.s000, pop2010 + frasal: True
+###
+semeval2013.d003.s009, degree + frasal: True
+semeval2013.d003.s009, degree + pop2010: True
+semeval2013.d003.s009, pop2010 + frasal: True
+###
+semeval2013.d010.s019, degree + frasal: True
+semeval2013.d010.s019, degree + pop2010: True
+semeval2013.d010.s019, pop2010 + frasal: True
+###
+semeval2013.d000.s006, degree + frasal: False
+semeval2013.d000.s006, degree + pop2010: True
+semeval2013.d000.s006, pop2010 + frasal: False
+###
+semeval2015.d001.s049, degree + frasal: False
+semeval2015.d001.s049, degree + pop2010: False
+semeval2015.d001.s049, pop2010 + frasal: True
+###
+senseval3.d002.s007, degree + frasal: False
+senseval3.d002.s007, degree + pop2010: False
+senseval3.d002.s007, pop2010 + frasal: True
+###
+semeval2013.d001.s005, degree + frasal: False
+semeval2013.d001.s005, degree + pop2010: False
+semeval2013.d001.s005, pop2010 + frasal: False
+###
+semeval2013.d012.s010, degree + frasal: False
+semeval2013.d012.s010, degree + pop2010: False
+semeval2013.d012.s010, pop2010 + frasal: True
+###
+semeval2015.d001.s004, degree + frasal: True
+semeval2015.d001.s004, degree + pop2010: False
+semeval2015.d001.s004, pop2010 + frasal: False
+
+##############################
+# Comparação DEGREE com DEGREE_DIST
+
+semeval2007.d000.s000: False
+###
+semeval2013.d003.s009: True
+###
+semeval2013.d010.s019: True
+###
+semeval2013.d000.s006: False
+###
+semeval2015.d001.s049: False
+###
+senseval3.d002.s007: True
+###
+semeval2013.d001.s005: False
+###
+semeval2013.d012.s010: False
+###
+semeval2015.d001.s004: True
