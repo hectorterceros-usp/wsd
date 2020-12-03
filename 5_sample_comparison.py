@@ -233,7 +233,8 @@ def run_for_all(folder, dep):
             G = graph_from_sentence(sent, folder, dep)
             n_ids = len(set([i for k, i in G.nodes(data='id')]))
             new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges()), 'clusters': n_ids}
-            df = df.append(new_dict, ignore_index=True)
+            if n_ids > 1:
+                df = df.append(new_dict, ignore_index=True)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
     return df
@@ -256,8 +257,8 @@ def run_for_all_shortened(folder, dep, n_sents=10):
             G = graph_from_sentence(sent, folder, dep)
             n_ids = len(set([i for k, i in G.nodes(data='id')]))
             new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges()), 'clusters': n_ids}
-            df = df.append(new_dict, ignore_index=True)
-
+            if n_ids > 1:
+                df = df.append(new_dict, ignore_index=True)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
     return df

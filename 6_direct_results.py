@@ -89,7 +89,7 @@ def measure_sentence(sent_id, model, gpickle_folder, params={}):
     # print(G.edges(data='direct_dist_sim_jcn_log'))
     # params['measure'] = 'direct_dist_sim_jcn_log'
     # print(sent_id)
-    # params={'measure': 'dist_sim_jcn_ratio'}
+    # params={'measure': 'direct_dist_sim_jcn_log'}
     # 'semeval2013.d012.s010.t002.c000.copy'
     pred = model(G, params)
     pred_name = model.__name__ + '__' + sent_id
@@ -97,6 +97,7 @@ def measure_sentence(sent_id, model, gpickle_folder, params={}):
     tp, fp = 0, 0
     l = path_length(G, node_ids=pred, measure=params['measure'])
     solution = {}
+    prediction = {}
     for p in pred:
         # p = pred[0]
         inst_id = p[:-5]
@@ -108,9 +109,10 @@ def measure_sentence(sent_id, model, gpickle_folder, params={}):
         else:
             fp += 1
         solution[inst_id] = keys
+        prediction[inst_id] = p
     del(G)
     # acc = tp / (tp + fp)
-    return l, solution, tp, fp, n
+    return l, prediction, tp, fp, n
 # measure_sentence(sent_id, model)
 
 def measure_solution(model, gpickle_folder, n=-1, params={}):

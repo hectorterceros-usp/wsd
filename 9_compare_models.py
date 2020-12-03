@@ -57,6 +57,7 @@ def path_length(G, node_ids, measure='sim_jcn_log'):
         l = G.edges[node_ids[-1], node_ids[0]][measure]
     except:
         l = 0
+    steps = []
     for i in range(len(node_ids)-1):
         # i=0
         u, v = node_ids[i], node_ids[i+1]
@@ -67,7 +68,8 @@ def path_length(G, node_ids, measure='sim_jcn_log'):
             print('caminho desconectado')
             w = np.inf
         l += w
-    return l
+        steps.append(w)
+    return l, steps
 
 # # Analisando as respostas do gold_standard
 # sent_list = os.listdir(gpickle_folder)
@@ -76,39 +78,53 @@ def path_length(G, node_ids, measure='sim_jcn_log'):
 
 # measure_sentence(sent_id, model, gpickle_folder)
 # measure_sentence('semeval2007.d000.s000', degree_dist, gpickle_folder,params={'measure': 'direct_dist_sim_lesk'})
-def plot_sentence(sent_id, model, gpickle_folder, params={}):
-    # também estou juntando o que preciso do score_sentence()
-    # assim tenho as duas informações aqui
-    if 'measure' not in params:
-        params['measure'] = 'direct_dist_sim_jcn_log'
+def plot_sentence(sent_id, global_solution_df, gpickle_folder, params={}):
     # sent_id = 'semeval2015.d001.s049'
-    # model = dijkstra_frasal
+    # global_solution_df = solution_df
+    solution_df = global_solution_df.loc[global_solution_df ['id'] == sent_id]
     gpickle_file = gpickle_folder + sent_id + '.gpickle'
     G = nx.read_gpickle(gpickle_file)
     n = len(G)
     ids = {k: v for k, v in G.nodes(data='id')}
-    # print(G.edges(data='direct_dist_sim_jcn_log'))
     # params['measure'] = 'direct_dist_sim_jcn_log'
-    # print(sent_id)
-    # params={'measure': 'dist_sim_jcn_ratio'}
-    # 'semeval2013.d012.s010.t002.c000.copy'
-    pred = model(G, params)
-    gold_solution = gold_standard(G, params)
-    pred_name = model.__name__ + '__' + sent_id
-    pred_dict[pred_name] = pred
-    tp, fp = 0, 0
-    l = path_length(G, node_ids=pred, measure=params['measure'])
-    solution = {}
+    pred = solution_df['dijkstra_frasal'].values
+    gold_solution = solution_df['gold_standard'].values
+    l, steps = path_length(G, node_ids=pred, measure=params['measure'])
+    gl, gsteps = path_length(G, node_ids=gold_solution, measure=params['measure'])
     nodes = pd.DataFrame({'name': G.nodes()})
     nodes['c_y'] = nodes['name'].apply(lambda x: int(x[-3:]))
     nodes['t_x'] = nodes['name'].apply(lambda x: int(x[-8:-5]))
     plt.figure()
     plt.scatter(nodes['t_x'], nodes['c_y'], color='k')
     solution_graph = nodes.loc[nodes['name'].isin(pred)].sort_values('t_x')
+    solution_y = solution_graph['c_y'].values
     plt.plot(solution_graph['t_x'], solution_graph['c_y'], color='r')
     gold_graph = nodes.loc[nodes['name'].isin(gold_solution)].sort_values('t_x')
+    gold_y = gold_graph['c_y'].values
     plt.plot(gold_graph['t_x'], gold_graph['c_y'], color='g')
-    plt.legend(['dijkstra_frasal', 'gold_standard', 'conceitos'])
+    for i in range(len(steps)):
+        x = i + 0.5
+        v = steps[i]
+        gv = gsteps[i]
+        y = (solution_y[i] + solution_y[i+1])/2
+        gy = (gold_y[i] + gold_y[i+1])/2
+
+        plt.annotate('{:.3f}'.format(v), # this is the text
+                     (x,y), # this is the point to label
+                     textcoords="offset points", # how to position the text
+                     xytext=(0,10), # distance from text to points (x,y)
+                     color = 'r',
+                     ha='center') # horizontal alignment ca
+
+        plt.annotate('{:.3f}'.format(gv), # text
+                     (x,gy), # point to label
+                     textcoords="offset points", # how to position the text
+                     xytext=(0,10), # distance from text to points (x,y)
+                     color = 'g',
+                     ha='center') # horizontal alignment ca
+    plt.legend(['dijkstra_frasal, length: {:.2f}'.format(l),
+                'gold_standard, length: {:.2f}'.format(gl),
+                'conceitos'])
     plt.title('Ilustração dos caminhos')
     plt.ylabel('Conceitos de cada palavra')
     plt.xlabel('Palavras da frase')
@@ -126,9 +142,12 @@ def main():
     # gpickle_folder = './data/sample_10/'
     sent_list = os.listdir(gpickle_folder)
     sent_list = [s[:-8] for s in sent_list if s[-8:] == '.gpickle']
-    model = dijkstra_frasal
+    with open('./data/results/all_solutions.pickle', 'rb') as f:
+        solution_df = pickle.load(f)
+    solution_df['id'] = solution_df['gold_standard'].apply(lambda x: x[:-10])
     for s in sent_list:
-        f = plot_sentence(s, model, gpickle_folder, params={})
+        print('processando', s)
+        f = plot_sentence(s, solution_df, gpickle_folder, params={'measure': 'direct_dist_sim_jcn_log'})
 
 
 # print(s['degree'] == s['degree_dist'])
@@ -143,9 +162,9 @@ if __name__ == "__main__":
 #
 # with open('data/results/sample_solutions.pickle', 'rb') as f:
 #     df = pickle.load(f)
-# df.loc['senseval2.d001.s050']
-G
-dicio = {k: v for k, v in G.nodes(data='id')}
-df = pd.DataFrame({'cluster':dicio})
-df['n'] = [int(v.split('.')[-1]) for v in list(df.index)]
-df['k'] = [int(v.split('.')[-2]) for v in list(df.index)]
+# # df.loc['senseval2.d001.s050']
+# G
+# dicio = {k: v for k, v in G.nodes(data='id')}
+# df = pd.DataFrame({'cluster':dicio})
+# df['n'] = [int(v.split('.')[-1]) for v in list(df.index)]
+# df['k'] = [int(v.split('.')[-2]) for v in list(df.index)]
