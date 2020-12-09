@@ -33,15 +33,6 @@ from step2_dijkstra import dijkstra_frasal, dijkstra_pop2010
 
 gpickle_folder = './data/sample/'
 
-all_gold_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt'
-gold = {}
-with open(all_gold_loc, 'r') as f:
-    for line in f.readlines():
-        gold[line.split()[0]] = line.split()[1:]
-gold
-
-pred_dict = {}
-
 # G = nx.read_gpickle('data/sample/semeval2013.d012.s010.gpickle')
 # G.edges()[('semeval2013.d012.s010.t004.c007', 'semeval2013.d012.s010.t000.c001')]
 

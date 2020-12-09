@@ -205,7 +205,7 @@ def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio/', dep=(jcn, lesk)):
         synsets[instance.get('id')] = synsets_word
 
     G = graph_from_synsets(synsets, id, dependency = dep[0], backup=dep[1])
-    write_graph(G, id, folder)
+    # write_graph(G, id, folder)
     return G
 
 
@@ -226,15 +226,20 @@ def graph_from_sentence(sent, folder='./data/jcn+lesk_ratio/', dep=(jcn, lesk)):
 def run_for_all(folder, dep):
     start = time.time()
     df = pd.DataFrame()
+    graphs = {}
     for doc in root:
         for sent in doc:
             # print(sent.get('id'))
+            id = sent.get('id')
             print('processing ' + sent.get('id'))
             G = graph_from_sentence(sent, folder, dep)
             n_ids = len(set([i for k, i in G.nodes(data='id')]))
             new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges()), 'clusters': n_ids}
             if n_ids > 1:
                 df = df.append(new_dict, ignore_index=True)
+                graphs[id] = G
+    with open('./data/sample/all_graphs.pickle', 'wb') as f:
+        pickle.dump(graphs, f)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
     return df
@@ -250,6 +255,7 @@ def run_for_all_shortened(folder, dep, n_sents=10):
     if n_sents < 0:
         n_sents = len(sents)
     sents = np.random.choice(sents, n_sents, replace=False)
+    graphs = {}
     for sent in sents:
             # sent = root[0][0]
             # print(sent.get('id'))
@@ -259,6 +265,9 @@ def run_for_all_shortened(folder, dep, n_sents=10):
             new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges()), 'clusters': n_ids}
             if n_ids > 1:
                 df = df.append(new_dict, ignore_index=True)
+                graphs[id] = G
+    with open('./data/sample/all_graphs.pickle', 'wb') as f:
+        pickle.dump(graphs, f)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
     return df
