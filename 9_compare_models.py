@@ -69,12 +69,12 @@ def path_length(G, node_ids, measure='sim_jcn_log'):
 
 # measure_sentence(sent_id, model, gpickle_folder)
 # measure_sentence('semeval2007.d000.s000', degree_dist, gpickle_folder,params={'measure': 'direct_dist_sim_lesk'})
-def plot_sentence(sent_id, global_solution_df, gpickle_folder, params={}):
-    # sent_id = 'semeval2015.d001.s049'
+def plot_sentence(sent_id, global_solution_df, G, params={}):
+    # sent_id = 'semeval2013.d006.s024'
+    # G = graph_dict[sent_id]
     # global_solution_df = solution_df
+    # params={'measure': 'direct_dist_sim_lesk'}
     solution_df = global_solution_df.loc[global_solution_df ['id'] == sent_id]
-    gpickle_file = gpickle_folder + sent_id + '.gpickle'
-    G = nx.read_gpickle(gpickle_file)
     n = len(G)
     ids = {k: v for k, v in G.nodes(data='id')}
     # params['measure'] = 'direct_dist_sim_jcn_log'
@@ -131,14 +131,14 @@ def plot_sentence(sent_id, global_solution_df, gpickle_folder, params={}):
 
 def main():
     # gpickle_folder = './data/sample_10/'
-    sent_list = os.listdir(gpickle_folder)
-    sent_list = [s[:-8] for s in sent_list if s[-8:] == '.gpickle']
     with open('./data/results/all_solutions.pickle', 'rb') as f:
         solution_df = pickle.load(f)
-    solution_df['id'] = solution_df['gold_standard'].apply(lambda x: x[:-10])
-    for s in sent_list:
+    with open('./data/sample/all_graphs.pickle', 'rb') as f:
+        graph_dict = pickle.load(f)
+    for s in graph_dict:
         print('processando', s)
-        f = plot_sentence(s, solution_df, gpickle_folder, params={'measure': 'direct_dist_sim_jcn_log'})
+        G = graph_dict[s]
+        f = plot_sentence(s, solution_df, G, params={'measure': 'direct_dist_sim_jcn_log'})
 
 
 # print(s['degree'] == s['degree_dist'])

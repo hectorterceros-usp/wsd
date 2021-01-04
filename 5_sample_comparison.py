@@ -238,13 +238,16 @@ def run_for_all(folder, dep):
             if n_ids > 1:
                 df = df.append(new_dict, ignore_index=True)
                 graphs[id] = G
-    with open('./data/sample/all_graphs.pickle', 'wb') as f:
+    # with open('./data/sample/all_graphs.pickle', 'wb') as f:
+    #     pickle.dump(graphs, f)
+    with open('./data/public/all_graphs.pickle', 'wb') as f:
         pickle.dump(graphs, f)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
     return df
 
 def run_for_all_shortened(folder, dep, n_sents=10):
+    # dep = (jcn, lesk)
     start = time.time()
     df = pd.DataFrame()
     sents = []
@@ -259,15 +262,18 @@ def run_for_all_shortened(folder, dep, n_sents=10):
     for sent in sents:
             # sent = root[0][0]
             # print(sent.get('id'))
-            print('processing ' + sent.get('id'))
+            id = sent.get('id')
+            print('processing ' + id)
             G = graph_from_sentence(sent, folder, dep)
             n_ids = len(set([i for k, i in G.nodes(data='id')]))
-            new_dict = {'id': sent.get('id'), 'nodes': len(G.nodes()), 'edges': len(G.edges()), 'clusters': n_ids}
+            new_dict = {'id': id, 'nodes': len(G.nodes()), 'edges': len(G.edges()), 'clusters': n_ids}
             if n_ids > 1:
                 df = df.append(new_dict, ignore_index=True)
                 graphs[id] = G
     with open('./data/sample/all_graphs.pickle', 'wb') as f:
         pickle.dump(graphs, f)
+    # with open('./data/public/all_graphs.pickle', 'wb') as f:
+    #     pickle.dump(graphs, f)
     end = time.time()
     print('demorou {} segundos total'.format(int(end-start)))
     return df
@@ -294,7 +300,16 @@ except:
     os.mkdir(folder)
 # df = run_for_all_shortened(folder, (jcn, lesk), n_sents=10)
 # start = time.time()
-# df = run_for_all_shortened(folder, (jcn, lesk), n_sents=10)
+df = run_for_all_shortened(folder, (jcn, lesk), n_sents=50)
+# df = run_for_all(folder, (jcn, lesk))
+# end = time.time()
+# print('demorou {:d} segundos total'.format(int(end-start)))
+# print(df['nodes'].value_counts())
+# print(df['edges'].value_counts())
+with open('data/results/sample.pickle', 'wb') as f:
+    pickle.dump(df, f)
+
+
 df = run_for_all(folder, (jcn, lesk))
 # end = time.time()
 # print('demorou {:d} segundos total'.format(int(end-start)))
