@@ -1,1 +1,2 @@
 data/public/ filter=lfs diff=lfs merge=lfs -text
+data/public/all_graphs.pickle filter=lfs diff=lfs merge=lfs -text
