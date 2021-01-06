@@ -9,3 +9,4 @@ SourceCode+ExecutableFile/*
 **.gtsp
 **.png
 __pycache__
+!data/public/*
