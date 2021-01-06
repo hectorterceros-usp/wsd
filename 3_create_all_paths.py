@@ -18,6 +18,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import pickle
+from time import time
 
 # para salvar os gtsp preparados
 import os
@@ -108,23 +109,21 @@ def plot_all_paths(sent_id, global_solution_df, G, params={}, plot=False):
         acc = len([v for v in p if v in gold_solution])/len(p)
         points = points.append({'l': l, 'acc': acc, 'p': p}, ignore_index=True)
     points = points.sort_values('l').reset_index(drop=True)
-    pooled = points.head(len(points) // 100+1)
-    pooled_solution = mode_shortest(pooled['p'])
-    pooled_l, pooled_steps = path_length(G, node_ids=pooled_solution, measure=params['measure'])
-    pooled_acc = len([v for v in pooled_solution if v in gold_solution])/len(pooled_solution)
+    filename = 'data/all_paths/' + sent_id + '.pickle'
+    with open(filename, 'wb') as f:
+        pickle.dump(points, f)
     gold_pos = points.loc[points['acc'] == 1].index[0]
     gold_quant = gold_pos/len(points)
     gold_gain = points['l'][gold_pos]/points['l'][0]
     if plot:
         plt.figure()
         plt.scatter(points['l'], points['acc'], color='k', alpha=1/len(unique_ids))
-        plt.scatter(pooled_l, pooled_acc, color='r', alpha=1, marker='x')
         plt.legend(['caminhos em ordem frasal', 'pool 1% mais curtos'])
         plt.title('Comparação do comprimento com a acurácia dos caminhos')
         plt.ylabel('Acurácia')
         plt.xlabel('Comprimento do caminho')
-        # plt.show()
-        plt.savefig('./data/plots/scatter/caminhos_'+sent_id+'.png')
+        plt.show()
+        # plt.savefig('./data/plots/scatter/caminhos_'+sent_id+'.png')
         plt.close()
     del(G)
     # return points
@@ -134,48 +133,63 @@ def plot_all_paths(sent_id, global_solution_df, G, params={}, plot=False):
 # sent_id = 'senseval3.d002.s007'
 # measure_sentence(sent_id, dijkstra_frasal, gpickle_folder, params={'measure': 'direct_dist_sim_jcn_log'})
 
-def main():
-    # gpickle_folder = './data/sample_10/'
-    # folder = 'data/public/'
-    folder = 'data/sample/'
-    measure = 'direct_dist_sim_jcn_log'
+def cria_paths_para_pasta(folder, plot=False):
+    # measure = 'direct_dist_sim_jcn_log'
     with open(folder + 'all_solutions.pickle', 'rb') as f:
-        global_solution_df = pickle.load(f)[measure]
+        global_solution_dict = pickle.load(f)
     with open(folder + 'all_graphs.pickle', 'rb') as f:
         graph_dict = pickle.load(f)
     print('quantidade de grafos:', len(graph_dict))
-    golds = pd.DataFrame()
-    for s in graph_dict:
-        # s = 'semeval2013.d003.s009'
-        print('processando', s)
-        G = graph_dict[s]
-        gold_quant, gold_gain = plot_all_paths(s, global_solution_df, G, params={'measure': measure}, plot=True)
-        golds = golds.append(pd.DataFrame({'quant': gold_quant, 'gain': gold_gain}, index=[s]))
-    print(golds.head(10))
-    # g_quant = np.mean(golds['quant'])
-    # g_gain = np.mean(golds['gain'])
-    print('rank relativo médio:', np.mean(golds['quant']))
-    print('diferença comprimento relativa média:', np.mean(golds['gain']))
-    plt.figure()
-    plt.hist(golds['quant'])
-    plt.title('Posição do gold standard contra todos os caminhos')
-    # plt.show()
-    plt.savefig('data/plot/hist_quant.png')
+    for m in global_solution_dict:
+        print('processando ', m)
+        golds = pd.DataFrame()
+        global_solution_df = global_solution_dict[m]
+        for s in graph_dict:
+            # s = 'semeval2013.d003.s009'
+            print('processando', s)
+            G = graph_dict[s]
+            gold_quant, gold_gain = plot_all_paths(s, global_solution_df, G, params={'measure': m}, plot=plot)
+            golds = golds.append(pd.DataFrame({'quant': gold_quant, 'gain': gold_gain}, index=[s]))
+        print(golds.head(10))
+        # g_quant = np.mean(golds['quant'])
+        # g_gain = np.mean(golds['gain'])
+        print('rank relativo médio:', np.mean(golds['quant']))
+        print('diferença comprimento relativa média:', np.mean(golds['gain']))
+        if plot:
+            plt.figure()
+            plt.hist(golds['quant'])
+            plt.title('Posição do gold standard contra todos os caminhos')
+            # plt.show()
+            plt.savefig('data/plot/hist_quant_{}.png'.format(m))
+            plt.close()
 
-    plt.figure()
-    plt.hist(golds['gain'])
-    plt.title('Comparação do comprimento do gold frente ao menor')
-    # plt.show()
-    plt.savefig('data/plot/hist_gain.png')
+            plt.figure()
+            plt.hist(golds['gain'])
+            plt.title('Comparação do comprimento do gold frente ao menor')
+            # plt.show()
+            plt.savefig('data/plot/hist_gain_{}.png'.format(m))
+            plt.close()
 
-    with open(folder + 'golds.pickle', 'wb') as f:
-        pickle.dump(golds, f)
+    # with open(folder + 'golds.pickle', 'wb') as f:
+    #     pickle.dump(golds, f)
+
+def main(argv):
+    try:
+        folder = argv[1]
+    except:
+        # folder = 'data/public/'
+        folder = 'data/sample/'
+    print('usando pasta', folder)
+    start = time()
+    cria_paths_para_pasta(folder)
+    end = time()
+    print('tempo total: ', (end-start)/60, ' minutos')
 
 
 # print(s['degree'] == s['degree_dist'])
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
 #
 # with open('data/results/sample.pickle', 'rb') as f:
 #     df = pickle.load(f)

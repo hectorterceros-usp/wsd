@@ -25,6 +25,7 @@ from nltk.tokenize import word_tokenize
 
 # para salvar os gtsp preparados
 import os
+import sys
 # import gzip
 # from collections import defaultdict
 
@@ -32,6 +33,10 @@ import os
 
 jcn_correction=1
 stemmer=PorterStemmer()
+
+all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
+tree = ET.parse(all_data_loc)
+root = tree.getroot()
 
 ## Functions
 
@@ -278,42 +283,31 @@ def run_for_all_shortened(folder, dep, n_sents=10):
     print('demorou {} segundos total'.format(int(end-start)))
     return df
 
-# run_for_all()
+def main(argv):
+    try:
+        n_sents = argv[1]
+        print('usando', folder, 'frases')
+    except:
+        n_sents = 10
+    start = time.time()
 
-all_data_loc = './data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml'
-tree = ET.parse(all_data_loc)
-root = tree.getroot()
-# sent = root[0][0]
+    # Para melhorar esse código,  vou criar os pares function
+    pares = {'jcn+lesk_ratio': (jcn, lesk_ratio),
+             'jcn+lesk_log': (jcn, lesk_log),
+             'al_saiagh': (al_saiagh, lesk)}
 
-# Para melhorar esse código,  vou criar os pares folder-function
-pares = {'jcn+lesk_ratio': (jcn, lesk_ratio),
-         'jcn+lesk_log': (jcn, lesk_log),
-         'al_saiagh': (al_saiagh, lesk)}
+    for folder in ['data/sample', 'data/public']:
+        try:
+            os.listdir(folder)
+        except:
+            os.mkdir(folder)
+    # df = run_for_all_shortened(folder, (jcn, lesk), n_sents=10)
+    # start = time.time()
+    run_for_all_shortened(folder, (jcn, lesk), n_sents=n_sents)
+    run_for_all(folder, (jcn, lesk))
 
-# for dep in pares:
-# dep = 'jcn+lesk_ratio'
-# dep = (jcn, lesk_ratio)
-folder = './data/sample/'
-try:
-    os.listdir(folder)
-except:
-    os.mkdir(folder)
-# df = run_for_all_shortened(folder, (jcn, lesk), n_sents=10)
-# start = time.time()
-df = run_for_all_shortened(folder, (jcn, lesk), n_sents=50)
-# df = run_for_all(folder, (jcn, lesk))
-# end = time.time()
-# print('demorou {:d} segundos total'.format(int(end-start)))
-# print(df['nodes'].value_counts())
-# print(df['edges'].value_counts())
-with open('data/results/sample.pickle', 'wb') as f:
-    pickle.dump(df, f)
+    end = time.time()
+    print('tempo total: ', (end-start)/60, ' minutos')
 
-
-df = run_for_all(folder, (jcn, lesk))
-# end = time.time()
-# print('demorou {:d} segundos total'.format(int(end-start)))
-# print(df['nodes'].value_counts())
-# print(df['edges'].value_counts())
-with open('data/results/sample.pickle', 'wb') as f:
-    pickle.dump(df, f)
+if __name__ == "__main__":
+    main(sys.argv)

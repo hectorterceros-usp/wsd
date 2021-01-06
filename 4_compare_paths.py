@@ -108,18 +108,22 @@ def plot_all_paths(sent_id, global_solution_df, G, params={}, plot=False):
         acc = len([v for v in p if v in gold_solution])/len(p)
         points = points.append({'l': l, 'acc': acc, 'p': p}, ignore_index=True)
     points = points.sort_values('l').reset_index(drop=True)
-    pooled = points.head(len(points) // 100+1)
-    pooled_solution = mode_shortest(pooled['p'])
-    pooled_l, pooled_steps = path_length(G, node_ids=pooled_solution, measure=params['measure'])
-    pooled_acc = len([v for v in pooled_solution if v in gold_solution])/len(pooled_solution)
+    try:
+        pooled_solution = solution_df['pooled'].values
+        pooled_l, pooled_steps = path_length(G, node_ids=pooled_solution, measure=params['measure'])
+        pooled_acc = len([v for v in pooled_solution if v in gold_solution])/len(pooled_solution)
+        pooled = True
     gold_pos = points.loc[points['acc'] == 1].index[0]
     gold_quant = gold_pos/len(points)
-    gold_gain = points['l'][gold_pos]/points['l'][0]
+    gold_gain = points['x'][gold_pos]/points['x'][0]
     if plot:
         plt.figure()
         plt.scatter(points['l'], points['acc'], color='k', alpha=1/len(unique_ids))
-        plt.scatter(pooled_l, pooled_acc, color='r', alpha=1, marker='x')
-        plt.legend(['caminhos em ordem frasal', 'pool 1% mais curtos'])
+        if pooled:
+            plt.scatter(pooled_l, pooled_acc, color='r', alpha=1, marker='x')
+            plt.legend(['caminhos em ordem frasal', 'pool 1% mais curtos'])
+        else:
+            plt.legend(['caminhos em ordem frasal'])
         plt.title('Comparação do comprimento com a acurácia dos caminhos')
         plt.ylabel('Acurácia')
         plt.xlabel('Comprimento do caminho')
@@ -156,18 +160,8 @@ def main():
     # g_gain = np.mean(golds['gain'])
     print('rank relativo médio:', np.mean(golds['quant']))
     print('diferença comprimento relativa média:', np.mean(golds['gain']))
-    plt.figure()
     plt.hist(golds['quant'])
-    plt.title('Posição do gold standard contra todos os caminhos')
-    # plt.show()
-    plt.savefig('data/plot/hist_quant.png')
-
-    plt.figure()
-    plt.hist(golds['gain'])
-    plt.title('Comparação do comprimento do gold frente ao menor')
-    # plt.show()
-    plt.savefig('data/plot/hist_gain.png')
-
+    plt.show()
     with open(folder + 'golds.pickle', 'wb') as f:
         pickle.dump(golds, f)
 
